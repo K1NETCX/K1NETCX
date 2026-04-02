@@ -1,0 +1,194 @@
+-- [[ 💠 K1N-ET1C HUB - FRAGMENTED ENGINE CLOUD (STABLE) ]]
+-- Autor: K1neTCx (Venqy Hub)
+-- Tecla de Atalho: "L"
+
+-- [[ 🚀 AUTO-LOADER GITHUB ]]
+-- Isso garante que a versão mais recente do seu GitHub seja executada junto com a Engine.
+task.spawn(function()
+    local success, err = pcall(function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/K1NETCX/K1NETCX/refs/heads/main/K1-Main"))()
+    end)
+    if not success then
+        warn("[K1N-ET1C]: Falha ao carregar script do GitHub: " .. tostring(err))
+    end
+end)
+
+local lp = game.Players.LocalPlayer
+local UIS = game:GetService("UserInputService")
+local HttpService = game:GetService("HttpService")
+local TweenService = game:GetService("TweenService")
+local TeleportService = game:GetService("TeleportService")
+
+local HUB_COLOR = Color3.fromRGB(0, 255, 127) -- Verde K1netic
+local BASE_URL = "https://k1netcx-default-rtdb.firebaseio.com/"
+
+-- [[ 👥 LISTA DE DESENVOLVEDORES ]]
+local developers = {
+    [10706698065] = true, -- K1neTCx (Seu ID)
+}
+local isOwner = developers[lp.UserId] or lp.Name == "K1NETCx"
+local finalJoinTime = os.time()
+
+-- [Lógica de Sharding]
+local function getMyShard()
+    local lastDigit = lp.UserId % 10
+    return (lastDigit == 0) and "" or "k1netcx-db" .. lastDigit
+end
+
+local myShardPath = getMyShard()
+
+-- [[ 🌐 HTTP WRAPPER ]]
+local function kineticRequest(method, url, body)
+    local req = syn and syn.request or http_request or request or (http and http.request)
+    if req then
+        local success, result = pcall(function()
+            return req({
+                Url = url, Method = method,
+                Headers = {["Content-Type"] = "application/json"},
+                Body = body and HttpService:JSONEncode(body) or nil
+            })
+        end)
+        return success and result or nil
+    end
+end
+
+-- [[ 📢 NOTIFICAÇÃO K1NETIC ]]
+local function showK1neticNotice(msg, isPrivate)
+    if not msg or msg == "" then return end
+    local sg = lp.PlayerGui:FindFirstChild("K1netic_Notice") or Instance.new("ScreenGui", lp.PlayerGui)
+    sg.Name = "K1netic_Notice"
+    sg.ResetOnSpawn = false
+    
+    local container = Instance.new("Frame", sg)
+    container.Size = UDim2.new(0, 0, 0, 50)
+    container.Position = UDim2.new(0.5, 0, 0.15, 0)
+    container.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+    container.BackgroundTransparency = 0.2
+    Instance.new("UICorner", container).CornerRadius = UDim.new(0, 10)
+    
+    local stroke = Instance.new("UIStroke", container)
+    stroke.Color = isPrivate and Color3.fromRGB(255, 50, 50) or HUB_COLOR
+    stroke.Thickness = 2
+    
+    local label = Instance.new("TextLabel", container)
+    label.Size = UDim2.new(1, -20, 1, 0)
+    label.Position = UDim2.new(0, 10, 0, 0)
+    label.BackgroundTransparency = 1
+    label.TextColor3 = Color3.new(1, 1, 1)
+    label.TextSize = 16
+    label.Font = Enum.Font.Code
+    label.Text = "[K1N-ET1C]: " .. tostring(msg)
+    label.TextTransparency = 1
+
+    TweenService:Create(container, TweenInfo.new(0.5, Enum.EasingStyle.Back), {Size = UDim2.new(0, 380, 0, 50), Position = UDim2.new(0.5, -190, 0.15, 0)}):Play()
+    task.wait(0.3)
+    TweenService:Create(label, TweenInfo.new(0.3), {TextTransparency = 0}):Play()
+    
+    task.delay(7, function()
+        TweenService:Create(label, TweenInfo.new(0.5), {TextTransparency = 1}):Play()
+        local out = TweenService:Create(container, TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {Size = UDim2.new(0, 0, 0, 50), Position = UDim2.new(0.5, 0, 0.15, 0)})
+        out:Play()
+        out.Completed:Connect(function() container:Destroy() end)
+    end)
+end
+
+-- [[ 🛰️ PAINEL DE CONTROLE (TECLA L) ]]
+local function buildAdminPanel()
+    local sg = lp.PlayerGui:FindFirstChild("K1netic_Admin_Panel") or Instance.new("ScreenGui", lp.PlayerGui)
+    sg.Name = "K1netic_Admin_Panel"
+    sg.Enabled = false
+    sg.ResetOnSpawn = false
+    sg:ClearAllChildren()
+
+    local frame = Instance.new("Frame", sg)
+    frame.Size = UDim2.new(0, 420, 0, 600)
+    frame.Position = UDim2.new(1, -430, 0.5, -300)
+    frame.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
+    frame.BackgroundTransparency = 0.2
+    Instance.new("UICorner", frame)
+    Instance.new("UIStroke", frame).Color = HUB_COLOR
+
+    local input = Instance.new("TextBox", frame)
+    input.Size = UDim2.new(0.9, 0, 0, 50)
+    input.Position = UDim2.new(0.05, 0, 0.88, 0)
+    input.PlaceholderText = "[ID:MSG] ou Apenas Texto"
+    input.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    input.TextColor3 = Color3.new(1, 1, 1)
+    Instance.new("UICorner", input)
+
+    input.FocusLost:Connect(function(enter)
+        if enter and input.Text ~= "" then
+            local text = input.Text
+            if string.find(text, ":") then
+                local split = string.split(text, ":")
+                kineticRequest("PUT", BASE_URL .. "private/" .. string.gsub(split[1], " ", "") .. ".json", {["msg"] = split[2]})
+            else
+                kineticRequest("PUT", BASE_URL .. "announcement.json", {["msg"] = text})
+            end
+            input.Text = ""
+        end
+    end)
+end
+
+-- [[ 🚀 CLOUD SYNC ]]
+local function startCloudSync()
+    task.spawn(function()
+        while true do
+            pcall(function()
+                local data = {
+                    ["displayName"] = lp.DisplayName,
+                    ["username"] = lp.Name,
+                    ["lastSeen"] = os.time(),
+                    ["joinTime"] = finalJoinTime,
+                    ["status"] = (lp.Character and lp.Character:FindFirstChild("Humanoid") and lp.Character.Humanoid.Health > 0) and "ALIVE" or "DEAD",
+                    ["jobId"] = game.JobId,
+                    ["userId"] = lp.UserId
+                }
+                kineticRequest("PATCH", BASE_URL .. myShardPath .. "/" .. lp.UserId .. ".json", data)
+            end)
+            task.wait(2)
+        end
+    end)
+
+    task.spawn(function()
+        local lastG, lastP = "", ""
+        while true do
+            pcall(function()
+                local resG = kineticRequest("GET", BASE_URL .. "announcement.json")
+                if resG and resG.Body then
+                    local data = HttpService:JSONDecode(resG.Body)
+                    if data and data.msg and data.msg ~= "" and data.msg ~= lastG then
+                        lastG = data.msg; showK1neticNotice(data.msg, false)
+                    end
+                end
+                
+                local resP = kineticRequest("GET", BASE_URL .. "private/" .. lp.UserId .. ".json")
+                if resP and resP.Body then
+                    local data = HttpService:JSONDecode(resP.Body)
+                    if data and data.msg and data.msg ~= "" and data.msg ~= lastP then
+                        lastP = data.msg; showK1neticNotice(data.msg, true)
+                        kineticRequest("DELETE", BASE_URL .. "private/" .. lp.UserId .. ".json")
+                    end
+                end
+            end)
+            task.wait(3)
+        end
+    end)
+end
+
+-- [[ 🔐 INICIALIZAÇÃO ]]
+local function init()
+    showK1neticNotice("Cloud Fragmented Engine Ativada!", false)
+    startCloudSync()
+    if isOwner then buildAdminPanel() end
+end
+
+-- Inicia o script
+init()
+
+-- [[ ⌨️ ATALHO TECLA L ]]
+UIS.InputBegan:Connect(function(i, gpe)
+    if not gpe and i.KeyCode == Enum.KeyCode.L and lp.PlayerGui:FindFirstChild("K1netic_Admin_Panel") then
+        lp.PlayerGui.K1netic_Admin_Panel.Enabled = not lp.PlayerGui.K1netic_Admin_Panel.Enabled
+    end
+end)
