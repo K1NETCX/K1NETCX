@@ -1,0 +1,266 @@
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local root = character:WaitForChild("HumanoidRootPart")
+local UIS = game:GetService("UserInputService")
+
+local ALTURA_INICIAL = 5000
+local COOLDOWN = 2
+local ASSET_ID = 110820180786076 
+local DESTINO_FINAL = CFrame.new(15.6611328, 4955.0, -6.8840332, 1, 0, 0, 0, 1, 0, 0, 0, 0.999999881)
+
+-- Tabela de Assets Extras (Novo script)
+local assetsToLoad = {
+    {
+        id = 10509163494,
+        name = "Model",
+        cf = CFrame.new(-434.91, 4.20, -280.51) * CFrame.Angles(math.rad(-90), math.rad(0), math.rad(-113.2)),
+        size = nil
+    },
+    {
+        id = 18975763672,
+        name = "MeshPart",
+        cf = CFrame.new(-441.67, 5.55, -265.45) * CFrame.fromEulerAnglesXYZ(math.rad(180), math.rad(23), math.rad(180)),
+        size = Vector3.new(22.42, 8.47, 8.60)
+    },
+    {
+        id = 54958075,
+        name = "Part_Extra",
+        cf = CFrame.new(-350.050934, 4.15653658, -74.3423996, -0.156285599, 0.760999322, 0.629646599, 0.00808287412, -0.636473179, 0.771256387, 0.987678766, 0.125625625, 0.0933205411),
+        size = Vector3.new(4.130000114440918, 1.7699999809265137, 8.690000534057617)
+    }
+}
+
+-- Tabela de Wedges (Configurações de colisão)
+local WEDGE_DATA = {
+    {cf = CFrame.new(-554.137695, 15.6999998, -226.679825, -4.37113883e-08, 0, -1, 0, 1, -0, 1, 0, -4.37113883e-08), size = Vector3.new(20, 4, 7)},
+    {cf = CFrame.new(-560.990051, 15.6971331, -226.712402, -4.37113883e-08, 0, 1, -4.76837101e-07, 1, -2.08432125e-14, -1, -4.76837101e-07, -4.37113883e-08), size = Vector3.new(20, 4, 7)},
+    {cf = CFrame.new(-482.014954, 15.7420063, -357.348389, -0.927183867, -1.40000878e-07, 0.374606609, -2.07559822e-07, 1, -1.40000878e-07, -0.374606609, -2.07559822e-07, -0.927183867), size = Vector3.new(19.3599987, 3.11999988, 7.10999965)},
+    {cf = CFrame.new(-479.401062, 15.7420073, -364.049591, 0.927183867, 0, -0.374606609, 0, 1, 0, 0.374606609, 0, 0.927183867), size = Vector3.new(19.3600006, 3.11999988, 7.11000013)},
+    {cf = CFrame.new(64.5795975, 90.5349884, -162.985641, -0.965925813, -1.45850748e-07, 0.258819133, -1.90076406e-07, 1, -1.45850748e-07, -0.258819133, -1.90076406e-07, -0.965925813), size = Vector3.new(52.5399971, 12.5, 15.2000007)},
+    {cf = CFrame.new(-411.85495, 15.7420063, -331.928406, -0.939692616, -1.41889643e-07, 0.342020065, -2.02639399e-07, 1, -1.41889643e-07, -0.342020065, -2.02639399e-07, -0.939692616), size = Vector3.new(19.3599987, 3.11999988, 7.10999965)},
+    {cf = CFrame.new(-409.401062, 15.7420073, -338.509583, 0.945518553, 0, -0.325568169, 0, 1, 0, 0.325568169, 0, 0.945518553), size = Vector3.new(19.3600006, 3.11999988, 7.11000013)},
+    {cf = CFrame.new(222.379333, 184.99826, -112.654999, -0.991444886, -1.49704022e-07, 0.1305262, -1.70704709e-07, 1, -1.49704022e-07, -0.1305262, -1.70704709e-07, -0.991444886), size = Vector3.new(58.6000022, 11.7000007, 18.8000011)},
+    {cf = CFrame.new(190.942734, 184.959, -167.181152, 0.130526483, 0, 0.991444826, -1.85010208e-07, 1, 2.43571101e-08, -0.991444826, -1.86606655e-07, 0.130526483), size = Vector3.new(81, 11.6999998, 18)},
+    {cf = CFrame.new(247.163803, 184.94458, -209.69574, 0.991444886, 0, -0.1305262, 0, 1, 0, 0.1305262, 0, 0.991444886), size = Vector3.new(81, 11.6999998, 18)},
+    {cf = CFrame.new(150.035812, 184.959, 25.2984829, 0.0610486269, 0, 0.998134792, -1.86258589e-07, 1, 1.13920802e-08, -0.998134792, -1.86606655e-07, 0.0610486269), size = Vector3.new(26, 11.6999998, 18)}
+}
+
+local BALL_DATA = {
+    {cf = CFrame.new(-518.341309, 21.5503464, -123.052055, 1, 0, 0, 0, 1, 0, 0, 0, 1), size = Vector3.new(23, 20.20000076, 21)},
+    {cf = CFrame.new(-538.049744, 21.5503464, -123.052055, 1, 0, 0, 0, 1, 0, 0, 0, 1), size = Vector3.new(23, 20.20000076, 21)}
+}
+
+-- Função para carregar os Assets do seu novo script
+local function carregarAssetsExtras()
+    for _, data in ipairs(assetsToLoad) do
+        local success, objects = pcall(function()
+            return game:GetObjects("rbxassetid://" .. data.id)
+        end)
+
+        if success and objects and objects[1] then
+            local obj = objects[1]
+            obj.Name = data.name
+            obj.Parent = game.Workspace
+            
+            if data.size then
+                if obj:IsA("BasePart") then
+                    obj.Size = data.size
+                elseif obj:IsA("Model") and obj.PrimaryPart then
+                    obj.PrimaryPart.Size = data.size
+                end
+            end
+
+            if obj:IsA("Model") then
+                obj:PivotTo(data.cf)
+                for _, p in ipairs(obj:GetDescendants()) do
+                    if p:IsA("BasePart") then p.Anchored = true end
+                end
+            elseif obj:IsA("BasePart") then
+                obj.CFrame = data.cf
+                obj.Anchored = true
+            end
+        end
+    end
+end
+
+-- Função principal de configuração do Mapa
+local function configurarMapaShibuya()
+    local shibuya = workspace:FindFirstChild("nn_Shibuya")
+    if shibuya then
+        local children = shibuya:GetChildren()
+
+        -- 1. Desativar Colisões
+        local targets = {
+            children[243] and children[243]:FindFirstChild("Meshes/rooftop"),
+            children[243] and children[243]:FindFirstChild("MeshPart"),
+            children[230] and children[230]:FindFirstChild("Meshes/rooftop"),
+            children[230] and children[230]:FindFirstChild("MeshPart"),
+            children[229] and children[229]:FindFirstChild("Meshes/rooftop"),
+            children[229] and children[229]:FindFirstChild("MeshPart"),
+            children[1356]
+        }
+
+        for _, obj in pairs(targets) do
+            if obj and obj:IsA("BasePart") then obj.CanCollide = false end
+        end
+
+        local structure = shibuya:FindFirstChild("Assets") and shibuya.Assets:FindFirstChild("Assets") and shibuya.Assets.Assets:FindFirstChild("Structure'")
+        if structure then
+            local sChildren = structure:GetChildren()
+            if sChildren[20] and sChildren[20]:IsA("BasePart") then sChildren[20].CanCollide = false end
+            local tank = structure:FindFirstChild("Cooling Tank")
+            if tank and tank:IsA("BasePart") then tank.CanCollide = false end
+        end
+
+        -- 2. Ajuste do Objeto [1033]
+        if children[1033] then
+            children[1033].CFrame = CFrame.new(-395.243805, -1.79303193, -248.128616, 0.988938332, 0, -0.148327231, 0, 1, 0, 0.148327231, 0, 0.988938332)
+            children[1033].Size = Vector3.new(2048, 6.5, 2048)
+            children[1033].Orientation = Vector3.new(0, 0, 0)
+        end
+
+        -- 3. Criar Wedges
+        for _, data in pairs(WEDGE_DATA) do
+            local w = Instance.new("WedgePart")
+            w.Size, w.CFrame, w.Transparency, w.Anchored, w.CanCollide, w.Parent = data.size, data.cf, 1, true, true, shibuya
+        end
+
+        -- 4. Criar Balls
+        for _, data in pairs(BALL_DATA) do
+            local b = Instance.new("Part")
+            b.Shape = Enum.PartType.Ball
+            b.Size, b.CFrame, b.Transparency, b.Anchored, b.CanCollide, b.Parent = data.size, data.cf, 1, true, true, shibuya
+        end
+
+        -- 5. Limpezas e novo Carregamento de Assets
+        carregarAssetsExtras() 
+
+        local mTemp = shibuya:FindFirstChild("nn_maptemplate")
+        if mTemp and mTemp:FindFirstChild("invisible parts") then mTemp["invisible parts"]:Destroy() end
+
+        local vF = shibuya:FindFirstChild("Assets") and shibuya.Assets:FindFirstChild("Assets") and shibuya.Assets.Assets:FindFirstChild("Vehicle")
+        if vF then
+            local v = vF:GetChildren()
+            if v[14] then v[14]:Destroy() end
+            if v[13] then v[13]:Destroy() end
+        end
+
+        -- [[ ILUMINAÇÃO ]]
+        local Lighting = game:GetService("Lighting")
+        local Terrain = game:GetService("Workspace").Terrain
+
+        for _, child in ipairs(Lighting:GetChildren()) do
+            if child:IsA("PostProcessEffect") or child:IsA("Sky") or child:IsA("Atmosphere") or child:IsA("Clouds") then
+                child:Destroy()
+            end
+        end
+        for _, child in ipairs(Terrain:GetChildren()) do
+            if child:IsA("Clouds") then
+                child:Destroy()
+            end
+        end
+
+        Lighting.Ambient = Color3.fromRGB(89, 108, 138)
+        Lighting.Brightness = 0.2
+        Lighting.ColorShift_Bottom = Color3.fromRGB(0, 0, 0)
+        Lighting.ColorShift_Top = Color3.fromRGB(178, 219, 255)
+        Lighting.EnvironmentDiffuseScale = 0.98
+        Lighting.EnvironmentSpecularScale = 1
+        Lighting.OutdoorAmbient = Color3.fromRGB(64, 70, 104)
+        Lighting.ShadowSoftness = 0.2
+        Lighting.ClockTime = 10.311
+        Lighting.GeographicLatitude = -1.022
+        Lighting.ExposureCompensation = 0
+        Lighting.FogColor = Color3.fromRGB(255, 255, 255)
+        Lighting.FogEnd = 1000
+        Lighting.FogStart = 0
+
+        local bloom = Instance.new("BloomEffect", Lighting)
+        bloom.Name = "Bloom"
+        bloom.Intensity = 0.1
+        bloom.Size = 56
+        bloom.Threshold = 0.1
+
+        local dof = Instance.new("DepthOfFieldEffect", Lighting)
+        dof.Name = "DepthOfField"
+        dof.FarIntensity = 0.15
+        dof.FocusDistance = 0.163
+        dof.InFocusRadius = 3
+
+        local cc = Instance.new("ColorCorrectionEffect", Lighting)
+        cc.Name = "ColorCorrection"
+        cc.Brightness = 0.1
+        cc.Contrast = 0.15
+
+        local atm = Instance.new("Atmosphere", Lighting)
+        atm.Density = 0.349
+        atm.Color = Color3.fromRGB(131, 195, 255)
+        atm.Haze = 2.5
+
+        local sky = Instance.new("Sky", Lighting)
+        sky.Name = "Sky"
+        sky.SunTextureId = "rbxassetid://5822796817"
+        sky.SkyboxBk = "http://www.roblox.com/asset/?version=1&id=1014342"
+        sky.SkyboxDn = "http://www.roblox.com/asset/?version=1&id=1014343"
+        sky.SkyboxFt = "http://www.roblox.com/asset/?version=1&id=1014340"
+        sky.SkyboxLf = "http://www.roblox.com/asset/?version=1&id=1014341"
+        sky.SkyboxRt = "http://www.roblox.com/asset/?version=1&id=1014339"
+        sky.SkyboxUp = "http://www.roblox.com/asset/?version=1&id=1014344"
+
+        local clouds = Instance.new("Clouds", Terrain)
+        clouds.Cover = 0.643
+        clouds.Density = 0.42
+        clouds.Color = Color3.fromRGB(32, 31, 39)
+
+        local ss = Instance.new("ColorCorrectionEffect", Lighting)
+        ss.Name = "ScreenShader"
+
+        local safe = Instance.new("ColorCorrectionEffect", Lighting)
+        safe.Name = "safe"
+
+        -- [[ LOW GFX ]]
+        for _, v in pairs(game:GetDescendants()) do
+            if v:IsA("BasePart") or v:IsA("MeshPart") then
+                v.Material = Enum.Material.SmoothPlastic
+                v.Reflectance = 0
+            elseif v:IsA("Decal") or v:IsA("Texture") then
+                v:Destroy()
+            end
+        end
+
+        -- [[ NOVO TELEPORTE PARA O HIDRANTE ]]
+        local hydrants = shibuya:FindFirstChild("nn_maptemplate") and shibuya.nn_maptemplate:FindFirstChild("Hydrants")
+        if hydrants then
+            local targetHydrant = hydrants:GetChildren()[5]
+            if targetHydrant and targetHydrant:IsA("BasePart") then
+                root.CFrame = targetHydrant.CFrame * CFrame.new(0, 3, 0) -- Teleporta 3 studs acima para não bugar no chão
+            end
+        end
+    end
+end
+
+-- Lógica de carregamento e teleporte inicial
+local function loadBhop()
+    local success, model = pcall(function() return game:GetObjects("rbxassetid://" .. ASSET_ID)[1] end)
+    if success and model then
+        model.Parent = workspace
+        configurarMapaShibuya()
+        task.wait(0.5)
+        -- O teleporte para o DESTINO_FINAL foi removido daqui para priorizar o Hidrante definido na configuração do mapa
+        root.Anchored = false
+    else
+        root.Anchored = false
+    end
+end
+
+UIS.InputBegan:Connect(function(i, g) 
+    if not g and i.KeyCode == Enum.KeyCode.J then 
+        root.AssemblyLinearVelocity = Vector3.new(0,0,0)
+        root.CFrame = DESTINO_FINAL 
+    end 
+end)
+
+root.Anchored = true
+root.CFrame = CFrame.new(root.Position.X, ALTURA_INICIAL, root.Position.Z)
+task.wait(COOLDOWN)
+loadBhop()
