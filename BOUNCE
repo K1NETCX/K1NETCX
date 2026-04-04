@@ -1,0 +1,95 @@
+-- [[ BOUNCE ASSIST SYSTEM - SCRIPT INDEPENDENTE ]]
+-- Funcionalidade: Ao cair em superfícies inclinadas (rampas), o personagem ganha impulso e quica
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local lp = Players.LocalPlayer
+
+-- Variáveis do sistema
+local BounceActive = false
+local horizontalMomentum = Vector3.new(0, 0, 0)
+
+-- Função de notificação (opcional - remove se não quiser)
+local function notify(text)
+    pcall(function()
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "BOUNCE ASSIST",
+            Text = text,
+            Duration = 2
+        })
+    end)
+    print("[BOUNCE] " .. text)
+end
+
+-- Função para alternar o Bounce Assist
+local function toggleBounce()
+    BounceActive = not BounceActive
+    notify(BounceActive and "ATIVADO" or "DESATIVADO")
+end
+
+-- Loop principal do Bounce Assist
+RunService.Heartbeat:Connect(function(dt)
+    if not BounceActive then return end
+    
+    local char = lp.Character
+    if not char then return end
+    
+    local root = char:FindFirstChild("HumanoidRootPart")
+    local humanoid = char:FindFirstChildOfClass("Humanoid")
+    
+    if not root or not humanoid then return end
+    
+    local currentVel = root.AssemblyLinearVelocity
+    local verticalVel = currentVel.Y
+    local state = humanoid:GetState()
+    
+    -- Verifica se está no ar (caindo ou pulando)
+    if state == Enum.HumanoidStateType.Freefall or state == Enum.HumanoidStateType.Jumping then
+        -- Salva o momentum horizontal atual
+        horizontalMomentum = Vector3.new(currentVel.X, 0, currentVel.Z)
+        
+        -- Raycast para detectar o chão abaixo
+        local params = RaycastParams.new()
+        params.FilterDescendantsInstances = {char}
+        params.FilterType = Enum.RaycastFilterType.Exclude
+        local hit = workspace:Raycast(root.Position, Vector3.new(0, -5, 0), params)
+        
+        -- Se atingir o chão com velocidade descendente suficiente
+        if hit and verticalVel < -5 then
+            -- Verifica se a superfície é inclinada (não plana)
+            if hit.Normal.Y < 0.95 then
+                -- Calcula o novo impulso baseado na velocidade de queda
+                local newJump = math.abs(verticalVel) * 1.05
+                
+                -- Aplica o novo movimento (horizontal + impulso vertical)
+                root.AssemblyLinearVelocity = horizontalMomentum + Vector3.new(0, newJump, 0)
+                
+                -- Muda o estado para pulo
+                humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+                
+                -- Pequena pausa para evitar colisões estranhas
+                task.spawn(function()
+                    humanoid.PlatformStand = true
+                    task.wait(0.1)
+                    humanoid.PlatformStand = false
+                end)
+            end
+        end
+    end
+end)
+
+-- Bind para tecla (padrão: B - pode mudar)
+local TOGGLE_KEY = Enum.KeyCode.B
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.KeyCode == TOGGLE_KEY then
+        toggleBounce()
+    end
+end)
+
+-- Mensagem inicial
+print("=== BOUNCE ASSIST SYSTEM CARREGADO ===")
+print("Pressione B para ativar/desativar")
+print("Funciona em rampas e superfícies inclinadas!")
