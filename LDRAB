@@ -2455,5 +2455,38 @@ L.Changed:Connect(forceLighting)
 T.ChildAdded:Connect(function(child)
     if child:IsA("Clouds") then forceLighting() end
 end)
+-- [[ 🌀 K1N-ET1C - FINAL TELEPORT & SYNC ]]
+
+local function finalizeMapPosition()
+    local lp = game.Players.LocalPlayer
+    local char = lp.Character or lp.CharacterAdded:Wait()
+    local root = char:WaitForChild("HumanoidRootPart")
+
+    -- 1. Define a altura segura (5000 studs)
+    local skyPosition = Vector3.new(root.Position.X, 5000, root.Position.Z)
+
+    -- 2. Cria o chão para você não cair antes do mapa carregar
+    local base = Instance.new("Part")
+    base.Name = "SkyBase_K1N"
+    base.Size = Vector3.new(100, 2, 100) -- Um chão de 100x100
+    base.Position = skyPosition - Vector3.new(0, 3, 0) -- Um pouco abaixo do pé
+    base.Anchored = true
+    base.Material = Enum.Material.ForceField
+    base.Transparency = 0.5
+    base.Parent = game.Workspace
+
+    -- 3. Teleporta VOCÊ para o céu
+    root.CFrame = CFrame.new(skyPosition)
+    
+    print("🚀 Teleportado! Agora o seu script de mapa vai spawnar as coisas aqui em cima.")
+end
+
+-- Chama a função de teleporte
+finalizeMapPosition()
+
+-- [[ DICA ]] 
+-- Se o seu script de mapa tiver uma função como "SpawnMap()", 
+-- chame ela aqui embaixo para garantir que o mapa apareça no céu com você:
+-- if SpawnMap then SpawnMap() end
 
 print("Iluminação e Nuvens (61,61,61) Fixadas com Sucesso!")
