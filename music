@@ -1,0 +1,482 @@
+-- ======================================================
+-- 🎵 E5 MUSIC PLAYER - ULTIMATE INTEGRATION (FIXED)
+-- ======================================================
+
+local SoundService = game:GetService("SoundService")
+local TS = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local HttpService = game:GetService("HttpService")
+local ACCENT_COLOR = Color3.fromHex("D656FF")
+
+-- ======================================================
+-- 🛑 [核心修改] 開關邏輯 
+-- ======================================================
+if _G.E5_Music_Instance then 
+    local target = _G.E5_Music_Instance:FindFirstChildWhichIsA("CanvasGroup")
+    if target then
+        TS:Create(target, TweenInfo.new(0.2), {GroupTransparency = 1}):Play()
+        local currentPos = target.Position
+        local currentSize = target.Size
+        local shrinkPos = UDim2.new(currentPos.X.Scale, currentPos.X.Offset + (currentSize.X.Offset / 2), currentPos.Y.Scale, currentPos.Y.Offset)
+
+        local shrink = TS:Create(target, TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {
+            Size = UDim2.new(0, 0, 0, 360),
+            Position = shrinkPos
+        })
+        
+        shrink:Play()
+        shrink.Completed:Connect(function()
+            if _G.E5_Music_Instance then _G.E5_Music_Instance:Destroy() end
+            _G.E5_Music_Instance = nil
+        end)
+    else
+        _G.E5_Music_Instance:Destroy()
+        _G.E5_Music_Instance = nil
+    end
+    return 
+end
+
+-- ======================================================
+-- 🎼 [歌曲清單庫]
+-- ======================================================
+local SongLibrary = {
+    {Name = "Fleeting Frozen Heart", File = "frozen_heart.mp3", URL = "https://github.com/E5alR9/E5s/raw/main/Xxtarlit-FleetingFrozenHeart.mp3"},
+    {Name = "A LiFE", File = "alife.mp3", URL = "https://github.com/E5alR9/E5s/raw/main/alife.mp3"},
+    {Name = "Die For You (Sped Up)", File = "die_for_you.mp3", URL = "https://github.com/E5alR9/E5s/raw/main/DieForYou(spedup).mp3"},
+    {Name = "Cry For Me", File = "cry_for_me.mp3", URL = "https://github.com/E5alR9/E5s/raw/main/CryForMe-Ironmouse.mp3"},
+    {Name = "Call Me Now", File = "call_me_now.mp3", URL = "https://github.com/E5alR9/E5s/raw/main/MichaelCalfanxINNA-CallMeNow(Lyrics).mp3"},
+    {Name = "Mad Love (Sped Up)", File = "mad_love.mp3", URL = "https://github.com/E5alR9/E5s/raw/main/Mabel-MadLove(spedupTikTokRemix)Lyrics.mp3"},
+    {Name = "Blood Drain (Breakcore)", File = "blood_drain.mp3", URL = "https://github.com/E5alR9/E5s/raw/main/BLOODDRAINBREAKCORE.mp3"},
+    {Name = "It Can't Come Quickly Enough", File = "quickly_enough.mp3", URL = "https://github.com/E5alR9/list/raw/main/ItCan'tComeQuicklyEnough.mp3"},
+    {Name = "Love Me Not", File = "love_me_not.mp3", URL = "https://github.com/E5alR9/list/raw/main/RavynLenae-LoveMeNot(Lyrics).mp3"},
+    {Name = "EEEEA", File = "eeeea.mp3", URL = "https://github.com/E5alR9/list/raw/main/dia-EEEEA(LyricVideo).mp3"},
+    {Name = "You Broke My Heart", File = "broke_heart.mp3", URL = "https://github.com/E5alR9/list/raw/main/youbrokemyheart-kobzx2z%2CMyla(Lyrics).mp3"},
+    {Name = "Dreamy Cybercore Gaming Mix", File = "dreamy_cybercore.mp3", URL = "https://github.com/E5alR9/list/raw/main/dreamycybercoregamingmix(chillbreakcore).mp3"},
+    {Name = "Heavenly Breakcore Mix", File = "heavenly_break1.mp3", URL = "https://github.com/E5alR9/list/raw/main/heavenlybreakcoremix.mp3"},
+    {Name = "Heavenly Breakcore Mix 2", File = "heavenly_break2.mp3", URL = "https://github.com/E5alR9/list/raw/main/heavenlybreakcoremix2.mp3"},
+}
+
+-- ======================================================
+-- 🛠️ 狀態初始化
+-- ======================================================
+_G.E5_Looping = _G.E5_Looping or false
+_G.E5_Volume = _G.E5_Volume or 3
+
+local activeSound = SoundService:FindFirstChild("E5_Music_Source")
+local currentSongIndex = activeSound and activeSound:GetAttribute("SongIndex") or 1
+local isDraggingTime, isDraggingVol = false, false
+local isSwitching = false 
+
+-- ======================================================
+-- 🎨 UI 建立
+-- ======================================================
+local sg = Instance.new("ScreenGui", game:GetService("CoreGui"))
+sg.Name = "E5_Music_Panel"
+_G.E5_Music_Instance = sg
+
+local mainFrame = Instance.new("CanvasGroup", sg)
+mainFrame.Size = UDim2.new(0, 0, 0, 360) 
+mainFrame.Position = UDim2.new(0.5, 0, 0.5, -180)
+mainFrame.BackgroundColor3, mainFrame.BackgroundTransparency = Color3.fromRGB(15, 15, 15), 0.1
+mainFrame.GroupTransparency = 1 
+mainFrame.ClipsDescendants = true 
+Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 24)
+
+local mainStroke = Instance.new("UIStroke", mainFrame)
+mainStroke.Color = ACCENT_COLOR
+mainStroke.Transparency = 1 
+
+local Container = Instance.new("Frame", mainFrame)
+Container.Size, Container.Position, Container.BackgroundTransparency = UDim2.new(1, 0, 0.75, 0), UDim2.new(0, 0, 0.05, 0), 1
+Container.ClipsDescendants = true
+
+local PageLayout = Instance.new("UIPageLayout", Container)
+PageLayout.Padding, PageLayout.TweenTime = UDim.new(0, 50), 0.6
+PageLayout.EasingStyle, PageLayout.EasingDirection = Enum.EasingStyle.Quart, Enum.EasingDirection.Out
+
+-- [ PLAYER PAGE ]
+local PlayerPage = Instance.new("Frame", Container)
+PlayerPage.Size, PlayerPage.BackgroundTransparency = UDim2.new(1, 0, 1, 0), 1
+
+local SongNameLabel = Instance.new("TextLabel", PlayerPage)
+SongNameLabel.Text = activeSound and activeSound:GetAttribute("SongName") or "READY TO PLAY"
+SongNameLabel.Size, SongNameLabel.Position = UDim2.new(0.8, 0, 0, 60), UDim2.new(0, 40, 0.05, 0)
+SongNameLabel.BackgroundTransparency, SongNameLabel.TextColor3, SongNameLabel.Font, SongNameLabel.TextSize = 1, Color3.new(1,1,1), Enum.Font.GothamBold, 24
+SongNameLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+-- [ LIST PAGE ]
+local ListPage = Instance.new("ScrollingFrame", Container)
+ListPage.Size, ListPage.BackgroundTransparency, ListPage.ScrollBarThickness = UDim2.new(1, 0, 0.85, 0), 1, 0
+ListPage.AutomaticCanvasSize = Enum.AutomaticSize.Y
+Instance.new("UIListLayout", ListPage).Padding = UDim.new(0, 10)
+Instance.new("UIPadding", ListPage).PaddingLeft, Instance.new("UIPadding", ListPage).PaddingTop = UDim.new(0, 40), UDim.new(0, 20)
+
+-- ======================================================
+-- 🔄 核心功能函數
+-- ======================================================
+
+local function playSong(idx)
+    -- 1. 狀態鎖定與索引計算
+    if isSwitching or #SongLibrary == 0 then return end
+    isSwitching = true
+    
+    idx = (idx - 1) % #SongLibrary + 1
+    currentSongIndex = idx
+    local d = SongLibrary[idx]
+
+    -- 2. 立即停止並清除舊聲音，防止重疊
+    if activeSound then
+        activeSound:Stop()
+        activeSound:Destroy()
+        activeSound = nil
+    end
+
+    -- ------------------------------------------------------
+    -- ⚡ [優化邏輯] 優先檢查本地檔案
+    -- ------------------------------------------------------
+    if isfile(d.File) then
+        -- 檔案已存在，直接本地播放
+        local sound = Instance.new("Sound")
+        sound.Name = "E5_Music_Source"
+        sound.SoundId = getcustomasset(d.File)
+        sound.Volume = _G.E5_Volume
+        sound.Looped = _G.E5_Looping
+        sound:SetAttribute("SongName", d.Name:upper())
+        sound:SetAttribute("SongIndex", idx)
+        sound.Parent = SoundService
+        
+        -- 等待加載確保 TimeLength 正常
+        if not sound.IsLoaded then sound.Loaded:Wait() end
+        
+        activeSound = sound
+        activeSound:Play()
+        SongNameLabel.Text = d.Name:upper()
+        isSwitching = false -- 直接解鎖
+        return -- 結束函數，不執行後面的下載邏輯
+    end
+    -- ------------------------------------------------------
+
+    -- 3. 若檔案不存在，才進入下載流程
+    SongNameLabel.Text = "DOWNLOADING..."
+    
+    task.spawn(function()
+        print("📥 Downloading: " .. d.Name)
+        local getSuccess, content = pcall(function() 
+            return game:HttpGet(d.URL) 
+        end)
+        
+        if not (getSuccess and content) then
+            warn("❌ Download Failed: " .. d.Name)
+            SongNameLabel.Text = "DOWNLOAD ERROR"
+            isSwitching = false
+            return
+        end
+        
+        writefile(d.File, content)
+        
+        -- 下載完成後加載
+        local loadSuccess, err = pcall(function()
+            local sound = Instance.new("Sound")
+            sound.Name = "E5_Music_Source"
+            sound.SoundId = getcustomasset(d.File)
+            sound.Volume = _G.E5_Volume
+            sound.Looped = _G.E5_Looping
+            sound:SetAttribute("SongName", d.Name:upper())
+            sound:SetAttribute("SongIndex", idx)
+            sound.Parent = SoundService
+            
+            if not sound.IsLoaded then sound.Loaded:Wait() end
+            
+            activeSound = sound 
+            activeSound:Play()
+        end)
+
+        if loadSuccess then
+            SongNameLabel.Text = d.Name:upper()
+        else
+            warn("❌ Playback Error: " .. tostring(err))
+            SongNameLabel.Text = "PLAY ERROR"
+        end
+        
+        isSwitching = false
+    end)
+end
+
+local function RefreshUIList()
+    for _, child in ipairs(ListPage:GetChildren()) do
+        if child:IsA("TextButton") then child:Destroy() end
+    end
+    for i, s in ipairs(SongLibrary) do
+        local b = Instance.new("TextButton", ListPage)
+        b.Size, b.BackgroundColor3, b.BackgroundTransparency = UDim2.new(0.9, 0, 0, 45), Color3.new(0,0,0), 0.7
+        b.Text = string.format("    %d. %s", i, s.Name)
+        b.TextColor3, b.TextXAlignment, b.Font, b.TextSize = Color3.new(1,1,1), Enum.TextXAlignment.Left, Enum.Font.Gotham, 14
+        Instance.new("UICorner", b)
+        b.MouseButton1Click:Connect(function() 
+            playSong(i) 
+            PageLayout:JumpTo(PlayerPage) 
+        end)
+    end
+end
+
+local function FetchAndLoop()
+    -- 你的專屬 Firebase 連結
+    local FIREBASE_URL = "https://e5alr9-default-rtdb.asia-southeast1.firebasedatabase.app/.json"
+    
+    local currentExecID = os.clock()
+    _G.E5_Latest_ExecID = currentExecID
+    
+    local addedFiles = {}
+    
+    -- 初始化已存在的歌曲
+    for _, s in ipairs(SongLibrary) do 
+        addedFiles[s.File:lower()] = true 
+    end
+
+    task.spawn(function()
+        while _G.E5_Music_Instance and _G.E5_Latest_ExecID == currentExecID do
+            print("☁️ Firebase loading...")
+
+            local success, result = pcall(function()
+                return game:HttpGet(FIREBASE_URL)
+            end)
+
+            if success and result and result ~= "null" then
+                local data = HttpService:JSONDecode(result)
+                local foundNew = false
+                
+                -- 開始解析 Firebase 陣列
+                for _, item in pairs(data) do
+                    if item.name and item.download_url then
+                        local fileID = item.name:lower()
+                        
+                        if not addedFiles[fileID] then
+                            addedFiles[fileID] = true
+                            foundNew = true
+                            
+                            -- 1. 移除副檔名 2. 處理 URL 編碼(%20) 3. 去掉括號內容
+                            local cleanName = item.name:gsub("%.mp3$", "")
+                            cleanName = cleanName:gsub("%%20", " ")
+                            cleanName = cleanName:gsub("%(.-%)", "") -- 移除 (Lyrics) 等括號
+                            cleanName = cleanName:gsub("[%-_]", " ") -- 將底線轉為空格
+                            
+                            table.insert(SongLibrary, {
+                                Name = cleanName:upper(),
+                                File = item.name,
+                                URL = item.download_url
+                            })
+                            print("🎵 add: " .. cleanName:upper())
+                        end
+                    end
+                end
+                
+                if foundNew then
+                    -- 按字母排序
+                    table.sort(SongLibrary, function(a, b) return a.Name < b.Name end)
+                    
+                    -- 刷新 UI
+                    RefreshUIList()
+                    
+                    -- 更新滾動區域大小 (假設你的列表容器叫 ListPage)
+                    if ListPage then
+                        ListPage.CanvasSize = UDim2.new(0, 0, 0, #SongLibrary * 55)
+                    end
+                end
+            else
+                warn("☁️ Firebase error")
+            end
+            
+            -- 每 30 秒自動檢查一次
+            task.wait(30)
+        end
+    end)
+end
+
+-- ======================================================
+-- 🎹 播放器細節 UI
+-- ======================================================
+
+-- === 歌名滾動顯示區域 ===
+local SongNameMask = Instance.new("Frame", PlayerPage)
+SongNameMask.Name = "SongNameMask"
+SongNameMask.Size = UDim2.new(0.6, 0, 0, 30)
+SongNameMask.Position = UDim2.new(0, 40, 0.28, 0) -- 放在波形圖上方一點
+SongNameMask.BackgroundTransparency = 1
+SongNameMask.ClipsDescendants = true -- 確保文字超出時會被遮蓋
+
+local SongNameLabel = Instance.new("TextLabel", SongNameMask)
+SongNameLabel.Size = UDim2.new(1, 0, 1, 0)
+SongNameLabel.Text = "READY TO PLAY"
+SongNameLabel.BackgroundTransparency = 1
+SongNameLabel.TextColor3 = Color3.new(1, 1, 1)
+SongNameLabel.Font = Enum.Font.GothamBold
+SongNameLabel.TextSize = 20
+SongNameLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+-- 滾動邏輯函數
+local function updateScroll()
+    local TS = game:GetService("TweenService")
+    -- 先停止並重置位置
+    SongNameLabel.Position = UDim2.new(0, 0, 0, 0)
+    task.wait(1.5) -- 換歌後稍微停頓一下再開始滾動
+    
+    local textWidth = SongNameLabel.TextBounds.X
+    local maskWidth = SongNameMask.AbsoluteSize.X
+    
+    if textWidth > maskWidth then
+        local scrollDistance = textWidth - maskWidth + 30
+        local duration = scrollDistance / 25 -- 調整分母可改變滾動速度
+        
+        local info = TweenInfo.new(duration, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1, true)
+        local tween = TS:Create(SongNameLabel, info, {Position = UDim2.new(0, -scrollDistance, 0, 0)})
+        tween:Play()
+    end
+end
+
+-- 當文字改變時自動重新觸發滾動
+SongNameLabel:GetPropertyChangedSignal("Text"):Connect(updateScroll)
+
+-- === 原有的 UI 元件 (保留) ===
+local VizFrame = Instance.new("Frame", PlayerPage)
+VizFrame.Size, VizFrame.Position, VizFrame.BackgroundTransparency = UDim2.new(0.6, 0, 0, 40), UDim2.new(0, 40, 0.38, 0), 1
+local bars = {}
+for i = 1, 25 do
+    local bar = Instance.new("Frame", VizFrame)
+    bar.Size, bar.Position = UDim2.new(1/25, -2, 0.1, 0), UDim2.new((i-1)/25, 0, 1, 0)
+    bar.AnchorPoint, bar.BackgroundColor3, bar.BorderSizePixel = Vector2.new(0, 1), ACCENT_COLOR, 0
+    bar.BackgroundTransparency = 0.4; Instance.new("UICorner", bar); table.insert(bars, bar)
+end
+
+local TimeBarBG = Instance.new("TextButton", PlayerPage)
+TimeBarBG.Text, TimeBarBG.Size, TimeBarBG.Position, TimeBarBG.BackgroundColor3 = "", UDim2.new(0.5, 0, 0, 8), UDim2.new(0, 40, 0.52, 0), Color3.fromRGB(45, 45, 45)
+Instance.new("UICorner", TimeBarBG)
+local TimeBarFill = Instance.new("Frame", TimeBarBG)
+TimeBarFill.Size, TimeBarFill.BackgroundColor3, TimeBarFill.BorderSizePixel = UDim2.new(0, 0, 1, 0), ACCENT_COLOR, 0
+Instance.new("UICorner", TimeBarFill)
+
+local TimeText = Instance.new("TextLabel", PlayerPage)
+TimeText.Text, TimeText.Size, TimeText.Position = "00:00 / 00:00", UDim2.new(0.5, 0, 0, 20), UDim2.new(0, 40, 0.55, 0)
+TimeText.BackgroundTransparency, TimeText.TextColor3, TimeText.Font, TimeText.TextSize = 1, Color3.fromRGB(180, 180, 180), Enum.Font.Code, 12
+TimeText.TextXAlignment = Enum.TextXAlignment.Left
+
+local ControlFrame = Instance.new("Frame", PlayerPage)
+ControlFrame.Size, ControlFrame.Position, ControlFrame.BackgroundTransparency = UDim2.new(0.8, 0, 0, 40), UDim2.new(0, 40, 0.65, 0), 1
+local layout = Instance.new("UIListLayout", ControlFrame)
+layout.FillDirection, layout.Padding, layout.VerticalAlignment = Enum.FillDirection.Horizontal, UDim.new(0, 10), Enum.VerticalAlignment.Center
+
+local function createIconBtn(text)
+    local b = Instance.new("TextButton", ControlFrame)
+    b.Size, b.BackgroundColor3, b.Text, b.TextColor3, b.Font, b.TextSize = UDim2.new(0, 36, 0, 36), Color3.fromRGB(40, 40, 40), text, Color3.new(1,1,1), Enum.Font.GothamBold, 12
+    Instance.new("UICorner", b)
+    local s = Instance.new("UIStroke", b)
+    s.Color, s.Thickness, s.Transparency = Color3.fromRGB(100,100,100), 1.5, 0.5
+    return b, s
+end
+
+local PrevBtn = createIconBtn("|<")
+local RewBtn = createIconBtn("<<")
+local FwdBtn = createIconBtn(">>")
+local NextBtn = createIconBtn(">|")
+local LPBtn, LPS = createIconBtn("LP")
+
+local function updateLPUI()
+    LPS.Color = _G.E5_Looping and ACCENT_COLOR or Color3.fromRGB(100, 100, 100)
+    LPS.Thickness = _G.E5_Looping and 2.5 or 1.5
+    LPBtn.BackgroundColor3 = _G.E5_Looping and Color3.fromRGB(50, 20, 60) or Color3.fromRGB(40, 40, 40)
+end
+
+local VolBarBG = Instance.new("TextButton", ControlFrame)
+VolBarBG.Text, VolBarBG.Size, VolBarBG.BackgroundColor3 = "", UDim2.new(0, 70, 0, 6), Color3.fromRGB(45, 45, 45)
+Instance.new("UICorner", VolBarBG)
+local VolBarFill = Instance.new("Frame", VolBarBG)
+VolBarFill.Size, VolBarFill.BackgroundColor3 = UDim2.new(_G.E5_Volume/10, 0, 1, 0), ACCENT_COLOR
+Instance.new("UICorner", VolBarFill)
+
+local PlayBtn = Instance.new("TextButton", PlayerPage)
+PlayBtn.Size, PlayBtn.Position = UDim2.new(0, 90, 0, 90), UDim2.new(0.75, -20, 0.45, -10)
+PlayBtn.BackgroundColor3, PlayBtn.BackgroundTransparency, PlayBtn.Text = Color3.new(0,0,0), 0.5, ""
+Instance.new("UICorner", PlayBtn).CornerRadius = UDim.new(1, 0)
+Instance.new("UIStroke", PlayBtn).Color = ACCENT_COLOR
+
+local PlayIcon = Instance.new("TextLabel", PlayBtn)
+PlayIcon.Text, PlayIcon.Size, PlayIcon.BackgroundTransparency, PlayIcon.TextColor3, PlayIcon.TextSize = "▶", UDim2.new(1,0,1,0), 1, Color3.new(1,1,1), 36
+
+local PauseIcon = Instance.new("Frame", PlayBtn)
+PauseIcon.Size, PauseIcon.Position, PauseIcon.BackgroundTransparency, PauseIcon.AnchorPoint = UDim2.new(0.3,0,0.35,0), UDim2.new(0.5,0,0.5,0), 1, Vector2.new(0.5,0.5)
+local p1 = Instance.new("Frame", PauseIcon); p1.Size, p1.BackgroundColor3 = UDim2.new(0.3,0,1,0), Color3.new(1,1,1); Instance.new("UICorner", p1)
+local p2 = Instance.new("Frame", PauseIcon); p2.Size, p2.Position, p2.BackgroundColor3 = UDim2.new(0.3,0,1,0), UDim2.new(0.7,0,0,0), Color3.new(1,1,1); Instance.new("UICorner", p2)
+-- ======================================================
+-- 🚀 啟動與導航
+-- ======================================================
+local function nav(n, p, pg)
+    local b = Instance.new("TextButton", mainFrame)
+    b.Text, b.Size, b.Position, b.BackgroundColor3 = n, UDim2.new(0, 100, 0, 35), p, Color3.fromRGB(30,30,30)
+    b.TextColor3, b.Font, b.TextSize = Color3.new(1,1,1), Enum.Font.GothamBold, 14
+    Instance.new("UICorner", b)
+    b.MouseButton1Click:Connect(function() PageLayout:JumpTo(pg) end)
+end
+
+nav("PLAYER", UDim2.new(0.35, -50, 0.9, -10), PlayerPage)
+nav("LIST", UDim2.new(0.65, -50, 0.9, -10), ListPage)
+
+RefreshUIList()
+FetchAndLoop()
+updateLPUI()
+
+mainFrame.Active, mainFrame.Draggable = true, true
+
+-- 進場動畫
+local expandTween = TS:Create(mainFrame, TweenInfo.new(0.6, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+    Size = UDim2.new(0, 520, 0, 360), 
+    Position = UDim2.new(0.5, -260, 0.5, -180),
+    GroupTransparency = 0
+})
+expandTween:Play()
+task.delay(0.1, function() TS:Create(mainStroke, TweenInfo.new(0.4), {Transparency = 0}):Play() end)
+
+-- ======================================================
+-- 🎮 事件綁定與更新
+-- ======================================================
+RunService.RenderStepped:Connect(function()
+    if not _G.E5_Music_Instance then return end
+    local isPlaying = activeSound and activeSound.IsPlaying
+    
+    -- 【邏輯檢查】加入了 activeSound.TimeLength > 0 的判斷，防止加載瞬間跳歌
+    if activeSound and activeSound.TimeLength > 0 and activeSound.TimePosition >= (activeSound.TimeLength - 0.2) and not _G.E5_Looping and not isSwitching then
+        playSong(currentSongIndex + 1)
+    end
+    
+    PlayIcon.Visible = not isPlaying
+    PauseIcon.Visible = isPlaying
+    
+    for i, bar in ipairs(bars) do
+        local target = isPlaying and (math.random(20, 100)/100) or 0.1
+        bar.Size = bar.Size:Lerp(UDim2.new(1/25, -2, target, 0), 0.2)
+    end
+    
+    if isDraggingTime and activeSound then
+        local x = math.clamp((UserInputService:GetMouseLocation().X - TimeBarBG.AbsolutePosition.X) / TimeBarBG.AbsoluteSize.X, 0, 1)
+        activeSound.TimePosition = x * activeSound.TimeLength
+    elseif isDraggingVol then
+        local x = math.clamp((UserInputService:GetMouseLocation().X - VolBarBG.AbsolutePosition.X) / VolBarBG.AbsoluteSize.X, 0, 1)
+        _G.E5_Volume = x * 10
+        VolBarFill.Size = UDim2.new(x, 0, 1, 0)
+        if activeSound then activeSound.Volume = _G.E5_Volume end
+    end
+    
+    if activeSound and activeSound.TimeLength > 0 then
+        if not isDraggingTime then TimeBarFill.Size = UDim2.new(activeSound.TimePosition / activeSound.TimeLength, 0, 1, 0) end
+        TimeText.Text = string.format("%02d:%02d / %02d:%02d", math.floor(activeSound.TimePosition/60), activeSound.TimePosition%60, math.floor(activeSound.TimeLength/60), activeSound.TimeLength%60)
+    end
+end)
+
+TimeBarBG.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then isDraggingTime = true end end)
+VolBarBG.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then isDraggingVol = true end end)
+UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then isDraggingTime, isDraggingVol = false, false end end)
+PlayBtn.MouseButton1Click:Connect(function() if activeSound then if activeSound.IsPlaying then activeSound:Pause() else activeSound:Resume() end else playSong(1) end end)
+PrevBtn.MouseButton1Click:Connect(function() playSong(currentSongIndex - 1) end)
+NextBtn.MouseButton1Click:Connect(function() playSong(currentSongIndex + 1) end)
+RewBtn.MouseButton1Click:Connect(function() if activeSound then activeSound.TimePosition -= 10 end end)
+FwdBtn.MouseButton1Click:Connect(function() if activeSound then activeSound.TimePosition += 10 end end)
+LPBtn.MouseButton1Click:Connect(function() _G.E5_Looping = not _G.E5_Looping; if activeSound then activeSound.Looped = _G.E5_Looping end; updateLPUI() end)
