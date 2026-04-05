@@ -1,0 +1,1286 @@
+-- [[ 📥 K1N-ET1C HUB PREMIUM - CARREGAMENTO ]]
+_G.fKN = _G.fKN or "PageDown"           
+_G.freezeMS = _G.freezeMS or 300      
+_G.isMinimized = _G.isMinimized or false 
+_G.toggleKey = _G.toggleKey or Enum.KeyCode.R
+_G.spinSpeed = _G.spinSpeed or 10
+_G.freeze = false
+
+local p = game:GetService("Players").LocalPlayer
+local UIS = game:GetService("UserInputService")
+local SG = game:GetService("StarterGui")
+local VIM = game:GetService("VirtualInputManager")
+local RS = game:GetService("RunService")
+local VU = game:GetService("VirtualUser")
+local Cam = workspace.CurrentCamera
+local DC_CODE = "34JgRSKRXx"
+local DC_URL = "https://discord.gg/" .. DC_CODE
+local BG_IMAGE_ID = "rbxassetid://130181538648632"
+local Players = game:GetService("Players")
+local lp = Players.LocalPlayer
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local isPressing = false
+
+-- Variaveis K1N-ET1C
+local BhopActive = false
+local TASActive = false
+local BounceActive = false
+local spacePressed = false
+local horizontalMomentum = Vector3.new(0,0,0)
+local DownedActive = false
+local currentSpeed = 0
+local lastCameraYaw = 0
+local viewmodelActive = false
+local modeloAtual = nil
+
+-- Super Jump Variables
+local SuperJumpActive = false
+local SuperJumpKey = Enum.KeyCode.C
+local SuperJumpPower = 80
+
+-- Spin Bot Variables
+local SpinBotActive = false
+local SpinBotKey = Enum.KeyCode.V
+local SpinBotSpeed = 360
+local aPressed = false
+local dPressed = false
+local aDSpamDetected = false
+local spinBotConnection = nil
+
+-- Toxic Aura Color
+local ToxicAuraColor = Color3.fromRGB(255, 0, 0)
+_G.skyEnabled = _G.skyEnabled or false
+_G.headlessClicked = _G.headlessClicked or false
+_G.rightKClicked = _G.rightKClicked or false
+_G.leftKClicked = _G.leftKClicked or false
+_G.zbClickCount = _G.zbClickCount or 0
+_G.CustomFOV = 70
+_G.FOVEnabled = false
+
+-- Sistema de Notificacao
+local function notify(title, text, duration)
+    pcall(function()
+        SG:SetCore("SendNotification", {
+            Title = title or "SYSTEM",
+            Text = text or "",
+            Duration = duration or 2,
+            Icon = "rbxassetid://6023426926"
+        })
+    end)
+end
+
+-- Headers
+local function showHeader()
+    local wall = "///////////////////////////////////////////////////////////////////////////////////"
+    local floor = "\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"
+    print("\n" .. wall)
+    print([[										
+  _  __ _   _ ______   _______ _____ ___    _   _  _____ 
+ | \/ | \ | |  _ \ \ / /_   _|_   _|_ _|  | \ | ||_   _|
+ | \  /|  \| | |_) \ V /  | |   | |  | |   |  \| |  | |  
+ | |\/|| |\  |  _ < | |   | |   | |  | |   | |\  |  | |  
+ |_|  |_|_| \_|_| \_\|_|  |_|   |_| |___| |_| \_|  |_|  
+    ]])
+    print(floor)
+    print("|||| K1N-ET1C HUB PREMIUM |||| [ SYSTEM_OVERRIDE_INITIATED ] ||||")
+    print(floor)
+    print(wall .. "\n")
+end
+showHeader()
+
+-- Auto-Exec Items & Emotes
+task.spawn(function()
+    pcall(function()
+        local RS = game:GetService("ReplicatedStorage")
+        local Items = RS:WaitForChild("Items", 5)
+        if Items then
+            local Emotes = Items:FindFirstChild("Emotes")
+            local Cosmetics = Items:FindFirstChild("Cosmetics")
+            if Emotes then
+                pcall(function() game:GetService("ReplicatedStorage").Items.Emotes.RockinStride.Name = "Sit" end)
+                pcall(function() game:GetService("ReplicatedStorage").Items.Emotes.Broom.Name = "SwagWalk" end)
+                
+                local function dup(folder, old, new) 
+                    local i = folder:FindFirstChild(old) 
+                    if i then 
+                        i:Clone().Parent = folder 
+                        i.Name = new 
+                        return i
+                    end 
+                    return nil
+                end
+                
+                local emote = dup(Emotes, "ZombieStride", "Stride")
+                if emote then
+                    local oldModule = emote:FindFirstChild("EmoteModuleClassic")
+                    if oldModule then oldModule:Destroy() end
+                    local container = emote:FindFirstChild("AnimationClassic")
+                    if not container then
+                        container = Instance.new("Animation")
+                        container.Name = "AnimationClassic"
+                        container.Parent = emote
+                    end
+                    local anims = {}
+                    local options = emote:FindFirstChild("PossibleOptionsClassic")
+                    if options then
+                        for _, n in ipairs({"A", "B", "C"}) do
+                            local f = options:FindFirstChild(n)
+                            local a = f and f:FindFirstChildOfClass("Animation")
+                            if a then table.insert(anims, a.AnimationId) end
+                        end
+                    end
+                    task.spawn(function()
+                        local interval = 2
+                        while true do
+                            if #anims > 0 then
+                                local totalTime = workspace:GetServerTimeNow()
+                                local index = (math.floor(totalTime / interval) % #anims) + 1
+                                if container.AnimationId ~= anims[index] then
+                                    container.AnimationId = anims[index]
+                                end
+                            end
+                            task.wait(0)
+                        end
+                    end)
+                end
+            end
+            if Cosmetics then
+                pcall(function() 
+                    if Cosmetics:FindFirstChild("AngelicRedemption") then Cosmetics.AngelicRedemption.Name = "EclipseCrown" end
+                    if Cosmetics:FindFirstChild("FrostFlame") then Cosmetics.FrostFlame.Name = "NorthernStarRadiance" end
+                end)
+            end
+        end
+    end)
+end)
+
+-- BHOP SYSTEM
+local function startBhop()
+    BhopActive = not BhopActive
+    notify("Movement", BhopActive and "Auto Jump ON" or "Auto Jump OFF", 1)
+end
+
+-- TAS MOVEMENT SYSTEM
+local base_spd = 40
+local air_accel = 0.4
+local max_air_spd = 140
+local ground_friction = 2
+local cur_spd = base_spd
+local was_air = false
+
+local function chk_grnd(hrp) 
+    local params = RaycastParams.new() 
+    params.FilterDescendantsInstances = {lp.Character} 
+    params.FilterType = Enum.RaycastFilterType.Exclude 
+    return workspace:Raycast(hrp.Position, Vector3.new(0, -3.5, 0), params) ~= nil 
+end
+
+local function startTAS()
+    TASActive = not TASActive
+    notify("TAS Movement", TASActive and "Evade Strafe V5 Ativado!" or "TAS Movement Desativado.", 2)
+end
+
+-- BOUNCE ASSIST SYSTEM
+local function startBounce()
+    BounceActive = not BounceActive
+    notify("Movement", BounceActive and "Bounce Assist ON" or "Bounce Assist OFF", 1)
+end
+
+-- DOWNED SPEED SYSTEM (Toggle)
+local function startDowned()
+    DownedActive = not DownedActive
+    notify("Speed", DownedActive and "Downed speed activated" or "Downed speed deactivated", 1)
+end
+
+-- SUPER JUMP SYSTEM (Toggle)
+local function toggleSuperJump()
+    SuperJumpActive = not SuperJumpActive
+    if SuperJumpActive then
+        notify("Super Jump", "ATIVADO | Tecla: " .. tostring(SuperJumpKey.Name) .. " | Força: " .. SuperJumpPower, 2)
+    else
+        notify("Super Jump", "DESATIVADO", 1)
+    end
+end
+
+-- Configurar Super Jump (Tecla)
+local function setSuperJumpKey(keyName)
+    local success, key = pcall(function() return Enum.KeyCode[keyName:upper()] end)
+    if success and key then
+        SuperJumpKey = key
+        if SuperJumpActive then
+            notify("Super Jump", "Tecla alterada para: " .. key.Name, 1)
+        end
+        return true
+    else
+        notify("Super Jump", "Tecla inválida! Usando padrão: C", 1)
+        SuperJumpKey = Enum.KeyCode.C
+        return false
+    end
+end
+
+-- Configurar Super Jump (Força)
+local function setSuperJumpPower(power)
+    local num = tonumber(power)
+    if num and num > 0 and num < 1000 then
+        SuperJumpPower = num
+        if SuperJumpActive then
+            notify("Super Jump", "Força alterada para: " .. num, 1)
+        end
+        return true
+    else
+        notify("Super Jump", "Força inválida! (1-999)", 1)
+        return false
+    end
+end
+
+-- SPIN BOT SYSTEM
+local function startSpinBot()
+    SpinBotActive = not SpinBotActive
+    if SpinBotActive then
+        notify("Spin Bot", "ATIVADO | Pressione " .. SpinBotKey.Name .. " para ativar o giro", 2)
+    else
+        notify("Spin Bot", "DESATIVADO", 1)
+        if spinBotConnection then
+            spinBotConnection:Disconnect()
+            spinBotConnection = nil
+        end
+        aDSpamDetected = false
+    end
+end
+
+-- Configurar Spin Bot (Tecla de ativação)
+local function setSpinBotKey(keyName)
+    local success, key = pcall(function() return Enum.KeyCode[keyName:upper()] end)
+    if success and key then
+        SpinBotKey = key
+        if SpinBotActive then
+            notify("Spin Bot", "Tecla de ativação alterada para: " .. key.Name, 1)
+        end
+        return true
+    else
+        notify("Spin Bot", "Tecla inválida! Usando padrão: V", 1)
+        SpinBotKey = Enum.KeyCode.V
+        return false
+    end
+end
+
+-- Configurar Spin Bot (Velocidade)
+local function setSpinBotSpeed(speed)
+    local num = tonumber(speed)
+    if num and num > 0 and num < 1000 then
+        SpinBotSpeed = num
+        if SpinBotActive then
+            notify("Spin Bot", "Velocidade alterada para: " .. num .. "°/s", 1)
+        end
+        return true
+    else
+        notify("Spin Bot", "Velocidade inválida! (1-999)", 1)
+        return false
+    end
+end
+
+-- Função que faz o personagem girar
+local function startSpinning()
+    if spinBotConnection then
+        spinBotConnection:Disconnect()
+    end
+    
+    spinBotConnection = RunService.RenderStepped:Connect(function(dt)
+        if aDSpamDetected and SpinBotActive then
+            local char = lp.Character
+            if char and char:FindFirstChild("HumanoidRootPart") then
+                local hrp = char.HumanoidRootPart
+                local spinAmount = math.rad(SpinBotSpeed * dt)
+                hrp.CFrame = hrp.CFrame * CFrame.Angles(0, spinAmount, 0)
+            end
+        end
+    end)
+end
+
+-- DOWNED SLIDE SCRIPT (Botao separado)
+local function loadDownedSlide()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/Venqy/my-maps/refs/heads/main/downed-by-Venqy"))()
+    notify("Downed Slide", "Script Downed Slide carregado!", 2)
+end
+
+-- LEGACY ANIMATION SCRIPT (Movido para secao MOVEMENT)
+local function loadLegacyAnimation()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/K1NETCX/K1NETCX/refs/heads/main/LA"))()
+    notify("Legacy Animation", "Script Legacy Animation carregado!", 2)
+end
+
+-- LS SCRIPT (Auto Loot / Auto Click)
+local function loadLSScript()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/K1NETCX/K1NETCX/refs/heads/main/LS"))()
+    notify("LS Script", "Script LS carregado com sucesso!", 2)
+end
+
+-- MAP CUSTOM SCRIPT
+local function loadCustomMap()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/K1NETCX/K1NETCX/refs/heads/main/map"))()
+    notify("Custom Map", "Mapa customizado carregado!", 2)
+end
+
+-- SHADERS SCRIPT
+local function loadShaders()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/K1NETCX/K1NETCX/refs/heads/main/shaders"))()
+    notify("Shaders", "Shaders carregados com sucesso!", 2)
+end
+
+-- FOV SYSTEM
+local function toggleFOV()
+    _G.FOVEnabled = not _G.FOVEnabled
+    if not _G.FOVEnabled then
+        workspace.CurrentCamera.FieldOfView = 70
+    end
+    notify("FOV", _G.FOVEnabled and "FOV Customizado ON" or "FOV Customizado OFF", 1)
+end
+
+-- FULLBRIGHT SYSTEM
+local fullbrightActive = false
+local function toggleFullbright()
+    fullbrightActive = not fullbrightActive
+    if fullbrightActive then
+        game.Lighting.Ambient = Color3.fromRGB(255, 255, 255)
+        game.Lighting.Brightness = 2
+        notify("Effects", "Fullbright enabled", 1)
+    else
+        game.Lighting.Ambient = Color3.fromRGB(0, 0, 0)
+        game.Lighting.Brightness = 1
+        notify("Effects", "Fullbright disabled", 1)
+    end
+end
+
+-- TOXIC AURA (Script unico)
+local toxicAuraActive = false
+local toxicAuraObjects = {}
+
+local function RemoveToxicAura()
+    for _, obj in ipairs(toxicAuraObjects) do
+        pcall(function() obj:Destroy() end)
+    end
+    toxicAuraObjects = {}
+end
+
+local function LoadToxicAura()
+    local assetId = 14628750884 
+    local character = lp.Character or lp.CharacterAdded:Wait() 
+    local root = character:WaitForChild("HumanoidRootPart") 
+
+    local function loadAndCopyVFX() 
+        local success, model = pcall(function() return game:GetObjects("rbxassetid://" .. assetId)[1] end) 
+        if not success or not model then 
+            return 
+        end 
+        model.Parent = workspace 
+        table.insert(toxicAuraObjects, model)
+        local forwardPos = root.CFrame * CFrame.new(0, -3, -15) 
+        if model:IsA("Model") then 
+            if model.PrimaryPart then model:SetPrimaryPartCFrame(forwardPos) 
+            else 
+                local base = model:FindFirstChildWhichIsA("BasePart", true) 
+                if base then model:MoveTo(forwardPos.Position) end 
+            end 
+        end 
+        task.wait(1.5) 
+        local vfxFolder = workspace:FindFirstChild("VFX Auras") 
+        if not vfxFolder then 
+            model:Destroy()
+            return 
+        end 
+        
+        local children = vfxFolder:GetChildren() 
+        local dummy = children[2] 
+        
+        if not dummy or not dummy:IsA("Model") then 
+            model:Destroy()
+            return 
+        end 
+        
+        local humanoid = character:WaitForChild("Humanoid") 
+        local isR15 = humanoid.RigType == Enum.HumanoidRigType.R15 
+        local partMapping = { 
+            ["Head"] = "Head", 
+            ["Torso"] = isR15 and "UpperTorso" or "Torso", 
+            ["Left Arm"] = isR15 and "LeftUpperArm" or "Left Arm", 
+            ["Right Arm"] = isR15 and "RightUpperArm" or "Right Arm", 
+            ["Left Leg"] = isR15 and "LeftUpperLeg" or "Left Leg", 
+            ["Right Leg"] = isR15 and "RightUpperLeg" or "Right Leg", 
+        } 
+        
+        for sourceName, targetName in pairs(partMapping) do 
+            local sourcePart = dummy:FindFirstChild(sourceName, true) 
+            local targetPart = character:FindFirstChild(targetName, true) 
+            if sourcePart and targetPart then 
+                for _, child in ipairs(sourcePart:GetChildren()) do 
+                    if child:IsA("Attachment") then 
+                        local clone = child:Clone()
+                        clone.Parent = targetPart 
+                        table.insert(toxicAuraObjects, clone)
+                    end 
+                end 
+            end 
+        end
+        model:Destroy()
+    end 
+    loadAndCopyVFX() 
+end
+
+local function toggleToxicAura()
+    toxicAuraActive = not toxicAuraActive
+    if toxicAuraActive then
+        LoadToxicAura()
+        notify("Toxic Aura", "ATIVADA", 2)
+    else
+        RemoveToxicAura()
+        notify("Toxic Aura", "DESATIVADA", 1)
+    end
+end
+
+-- RGB AURELIUS
+local rgbAuraActive = false
+local rgbAuraObjects = {}
+
+local function RemoveRGBAura()
+    for _, obj in ipairs(rgbAuraObjects) do
+        pcall(function() obj:Destroy() end)
+    end
+    rgbAuraObjects = {}
+end
+
+local function LoadRGBAura()
+    local a = game:GetService("Players").LocalPlayer 
+    local b = a.Character or a.CharacterAdded:Wait() 
+    local c = game:GetService("RunService") 
+    local d = Instance.new("Folder", b) 
+    table.insert(rgbAuraObjects, d)
+    local e = Instance.new("Part", d) 
+    e.Size = Vector3.new(1, 1, 1) 
+    e.CanCollide = false 
+    e.Massless = true 
+    e.Material = Enum.Material.Neon 
+    local f = Instance.new("SpecialMesh", e) 
+    f.MeshType = Enum.MeshType.FileMesh 
+    f.MeshId = "rbxassetid://3270017" 
+    f.Scale = Vector3.new(4, 0.5, 4) 
+    local g = Instance.new("Weld", e) 
+    g.Part0 = e 
+    g.Part1 = b:WaitForChild("Head") 
+    local h = Instance.new("Part", d) 
+    h.Size = Vector3.new(1, 1, 1) 
+    h.CanCollide = false 
+    h.Massless = true 
+    h.Transparency = 1 
+    local i = Instance.new("Weld", h) 
+    i.Part0 = h 
+    i.Part1 = b:WaitForChild("HumanoidRootPart") 
+    i.C0 = CFrame.new(0, -3, 0) 
+    local j = Instance.new("ParticleEmitter", h) 
+    j.Texture = "rbxassetid://1472591136" 
+    j.Rate = 300 
+    j.Lifetime = NumberRange.new(2, 4) 
+    j.Speed = NumberRange.new(3, 8) 
+    j.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.5, 10), NumberSequenceKeypoint.new(1, 0)}) 
+    j.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.2, 0), NumberSequenceKeypoint.new(0.8, 0), NumberSequenceKeypoint.new(1, 1)}) 
+    j.LightEmission = 1 
+    j.EmissionDirection = Enum.NormalId.Top 
+    j.Drag = 2 
+    local k = Instance.new("ParticleEmitter", h) 
+    k.Texture = "rbxassetid://243660364" 
+    k.Rate = 50 
+    k.Lifetime = NumberRange.new(1, 2) 
+    k.Speed = NumberRange.new(5, 15) 
+    k.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.5, 2), NumberSequenceKeypoint.new(1, 0)}) 
+    k.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.5, 0.2), NumberSequenceKeypoint.new(1, 1)}) 
+    k.LightEmission = 1 
+    k.EmissionDirection = Enum.NormalId.Top 
+    local l = Instance.new("PointLight", b:WaitForChild("HumanoidRootPart")) 
+    l.Range = 15 
+    l.Brightness = 3 
+    l.Shadows = true 
+    local m = Instance.new("Part", d) 
+    m.Size = Vector3.new(1, 1, 1) 
+    m.CanCollide = false 
+    m.Massless = true 
+    m.Material = Enum.Material.Neon 
+    local n = Instance.new("SpecialMesh", m) 
+    n.MeshType = Enum.MeshType.FileMesh 
+    n.MeshId = "rbxassetid://1938002622" 
+    n.Scale = Vector3.new(5, 5, 5) 
+    local o = Instance.new("Weld", m) 
+    o.Part0 = m 
+    local pPart = b:FindFirstChild("Torso") or b:FindFirstChild("UpperTorso") 
+    o.Part1 = pPart 
+    local q = Instance.new("Trail", m) 
+    local r = Instance.new("Attachment", m) 
+    r.Position = Vector3.new(0, 2, 0) 
+    local s = Instance.new("Attachment", m) 
+    s.Position = Vector3.new(0, -2, 0) 
+    q.Attachment0 = r 
+    q.Attachment1 = s 
+    q.Lifetime = 0.5 
+    q.MinLength = 0.1 
+    q.LightEmission = 1 
+    q.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(1, 1)}) 
+    local t = 0 
+    local connection
+    connection = c.RenderStepped:Connect(function(u) 
+        if not rgbAuraActive then
+            connection:Disconnect()
+            return
+        end
+        t = t + u 
+        local v = tick() % 3 / 3 
+        local w = Color3.fromHSV(v, 1, 1) 
+        if e and e.Parent then e.Color = w end 
+        if m and m.Parent then m.Color = w end 
+        if j and j.Parent then j.Color = ColorSequence.new(w) end 
+        if k and k.Parent then k.Color = ColorSequence.new(w) end 
+        if l and l.Parent then l.Color = w l.Range = 15 + math.sin(t * 4) * 5 end 
+        if q and q.Parent then q.Color = ColorSequence.new(w) end 
+        if g and g.Parent then g.C0 = CFrame.new(0, -2.5 - math.sin(t * 3) * 0.5, 0) * CFrame.Angles(math.rad(15 * math.sin(t * 2)), t * 1.5, math.rad(15 * math.cos(t * 2))) end 
+        if o and o.Parent then o.C0 = CFrame.new(0, -0.5, -0.5) * CFrame.Angles(0, 0, math.rad(math.sin(t * 5) * 10)) end 
+    end)
+    table.insert(rgbAuraObjects, connection)
+end
+
+local function toggleRGBAura()
+    rgbAuraActive = not rgbAuraActive
+    if rgbAuraActive then
+        LoadRGBAura()
+        notify("RGB Aurelius", "ATIVADO", 2)
+    else
+        RemoveRGBAura()
+        notify("RGB Aurelius", "DESATIVADO", 1)
+    end
+end
+
+-- MAP LOADERS
+local function LoadDust2()
+    notify("Map Loader", "Loading Dust II map...", 2)
+    local LP = game.Players.LocalPlayer
+    local character = LP.Character or LP.CharacterAdded:Wait()
+    local root = character:WaitForChild("HumanoidRootPart")
+    local ALTURA_INICIAL = 5000
+    local COOLDOWN = 2
+    local ASSET_ID = 17343622288
+    local DESTINO_FINAL = CFrame.new(15.6611328, 4955.0, -6.8840332, 1, 0, 0, 0, 1, 0, 0, 0, 0.999999881)
+    root.Anchored = true
+    root.CFrame = CFrame.new(root.Position.X, ALTURA_INICIAL, root.Position.Z)
+    task.wait(COOLDOWN)
+    local success, model = pcall(function() return game:GetObjects("rbxassetid://" .. ASSET_ID)[1] end)
+    if success and model then
+        model.Parent = game.Workspace
+        if model:IsA("Model") then
+            if model.PrimaryPart then
+                model:SetPrimaryPartCFrame(DESTINO_FINAL * CFrame.new(0, -3, 0))
+            else
+                model:MoveTo(DESTINO_FINAL.Position - Vector3.new(0, 3, 0))
+            end
+        end
+        task.wait(0.5)
+        root.CFrame = DESTINO_FINAL
+        task.wait(0.2)
+        root.Anchored = false
+        notify("Map Loader", "Dust II loaded successfully!", 2)
+    else
+        root.Anchored = false
+        notify("Map Loader", "Failed to load Dust II", 2)
+    end
+end
+
+local function LoadBeeSwarmMap()
+    notify("Map Loader", "Loading Bee Swarm map...", 2)
+    local LP = game.Players.LocalPlayer
+    local character = LP.Character or LP.CharacterAdded:Wait()
+    local root = character:WaitForChild("HumanoidRootPart")
+    local ALTURA_INICIAL = 5000
+    local COOLDOWN = 2
+    local ASSET_ID = 5626514002
+    local DESTINO_FINAL = CFrame.new(15.6611328, 4955.0, -6.8840332, 1, 0, 0, 0, 1, 0, 0, 0, 0.999999881)
+    root.Anchored = true
+    root.CFrame = CFrame.new(root.Position.X, ALTURA_INICIAL, root.Position.Z)
+    task.wait(COOLDOWN)
+    local success, model = pcall(function() return game:GetObjects("rbxassetid://" .. ASSET_ID)[1] end)
+    if success and model then
+        model.Parent = game.Workspace
+        if model:IsA("Model") then
+            if model.PrimaryPart then
+                model:SetPrimaryPartCFrame(DESTINO_FINAL * CFrame.new(0, -3, 0))
+            else
+                model:MoveTo(DESTINO_FINAL.Position - Vector3.new(0, 3, 0))
+            end
+        end
+        task.wait(0.5)
+        root.CFrame = DESTINO_FINAL
+        task.wait(0.2)
+        root.Anchored = false
+        notify("Map Loader", "Bee Swarm loaded successfully!", 2)
+    else
+        root.Anchored = false
+        notify("Map Loader", "Failed to load Bee Swarm", 2)
+    end
+end
+
+-- SKYBOX SYSTEM
+local function ApplySkybox(id)
+    local Lighting = game:GetService("Lighting")
+    local sky = Lighting:FindFirstChildWhichIsA("Sky")
+    if not sky then
+        sky = Instance.new("Sky")
+        sky.Parent = Lighting
+    end
+    sky.SkyboxBk = id
+    sky.SkyboxDn = id
+    sky.SkyboxFt = id
+    sky.SkyboxLf = id
+    sky.SkyboxRt = id
+    sky.SkyboxUp = id
+    sky.SunTextureId = ""
+    sky.MoonTextureId = ""
+    sky.StarCount = 0
+    notify("Skybox", "Skybox aplicado!", 2)
+end
+
+-- VIEWMODEL KARAMBIT
+local karambitAssetId = "10119257186"
+local animID = "rbxassetid://14722073498"
+local animacaoKarambit = {
+    inspecionando = false, tempoInspecao = 0, girando = false, tempoGiro = 0,
+    alturaAtual = 0, amplitudeMovimento = 0.25, velocidadeMovimento = 2,
+    distanciaAtual = 2.5, alturaAtualInsp = -0.8, lateralAtual = 0.3,
+    rotacaoX = 0, rotacaoY = 0, rotacaoZ = 0,
+    alvoDistancia = 2.5, alvoAltura = -0.8, alvoLateral = 0.3,
+    alvoRotX = 0, alvoRotY = 0, alvoRotZ = 0,
+    offsetVertical = 0, alvoVertical = 0,
+    suavizacao = 0.18, suavizacaoRetorno = 0.15,
+}
+
+local function removerBracosNormais()
+    local character = lp.Character
+    if not character then return end
+    for _, parte in ipairs(character:GetDescendants()) do
+        if parte:IsA("BasePart") and (parte.Name:find("Arm") or parte.Name:find("Hand")) then
+            parte.Transparency = 1
+            parte.CanCollide = false
+        end
+    end
+end
+
+local function carregarModeloKarambit()
+    if modeloAtual then modeloAtual:Destroy() end
+    if not viewmodelActive then return end
+    local success, modelo = pcall(function() return game:GetObjects("rbxassetid://" .. karambitAssetId)[1] end)
+    if success and modelo then
+        modelo.Parent = workspace
+        modelo.Name = "K1N-ET1CKarambit_Hub"
+        for _, part in ipairs(modelo:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.Anchored, part.CanCollide, part.CastShadow = true, false, false
+                if not modelo.PrimaryPart then modelo.PrimaryPart = part end
+            end
+        end
+        modeloAtual = modelo
+    end
+end
+
+local function toggleViewmodel()
+    viewmodelActive = not viewmodelActive
+    if viewmodelActive then
+        removerBracosNormais()
+        carregarModeloKarambit()
+        notify("Karambit", "Viewmodel ativado! (H=recarregar, T=ocultar bracos, Q=Flip)", 3)
+    else
+        if modeloAtual then modeloAtual:Destroy() modeloAtual = nil end
+        notify("Karambit", "Viewmodel desativado.", 1)
+    end
+end
+
+-- SPIN BOT DETECTION (A e D spam)
+UIS.InputBegan:Connect(function(input, processed)
+    if processed then return end
+    
+    -- Detectar A e D spam
+    if input.KeyCode == Enum.KeyCode.A then
+        aPressed = true
+    elseif input.KeyCode == Enum.KeyCode.D then
+        dPressed = true
+    end
+    
+    -- Tecla para ativar/desativar o Spin Bot
+    if SpinBotActive and input.KeyCode == SpinBotKey then
+        if aDSpamDetected then
+            aDSpamDetected = false
+            notify("Spin Bot", "Giro PARADO", 1)
+        else
+            aDSpamDetected = true
+            startSpinning()
+            notify("Spin Bot", "Giro INICIADO! Girendo a " .. SpinBotSpeed .. "°/s", 1)
+        end
+    end
+    
+    -- SUPER JUMP INPUT
+    if SuperJumpActive and input.KeyCode == SuperJumpKey then
+        local char = lp.Character
+        if char and char:FindFirstChild("HumanoidRootPart") then
+            char.HumanoidRootPart.Velocity = Vector3.new(char.HumanoidRootPart.Velocity.X, SuperJumpPower, char.HumanoidRootPart.Velocity.Z)
+        end
+    end
+end)
+
+UIS.InputEnded:Connect(function(input)
+    if input.KeyCode == Enum.KeyCode.A then
+        aPressed = false
+    elseif input.KeyCode == Enum.KeyCode.D then
+        dPressed = false
+    end
+end)
+
+UIS.InputBegan:Connect(function(input, processed)
+    if processed then return end
+    if input.KeyCode == Enum.KeyCode.Space then
+        spacePressed = true
+    end
+    if viewmodelActive then
+        if input.KeyCode == Enum.KeyCode.H then
+            carregarModeloKarambit()
+            notify("Karambit", "Modelo recarregado!", 1)
+        elseif input.KeyCode == Enum.KeyCode.T then
+            removerBracosNormais()
+            notify("Karambit", "Bracos ocultados!", 1)
+        elseif input.KeyCode == Enum.KeyCode.Q then
+            if not animacaoKarambit.girando and not animacaoKarambit.inspecionando then
+                animacaoKarambit.girando = true
+                animacaoKarambit.tempoGiro = 0
+                local char = lp.Character
+                if char and char:FindFirstChild("Humanoid") then
+                    local animation = Instance.new("Animation")
+                    animation.AnimationId = animID
+                    local load = char.Humanoid:LoadAnimation(animation)
+                    load:Play()
+                end
+            end
+        elseif input.UserInputType == Enum.UserInputType.MouseButton1 then
+            if not animacaoKarambit.inspecionando and not animacaoKarambit.girando then
+                animacaoKarambit.inspecionando = true
+                animacaoKarambit.tempoInspecao = 0
+            end
+        end
+    end
+end)
+
+UIS.InputEnded:Connect(function(input)
+    if input.KeyCode == Enum.KeyCode.Space then
+        spacePressed = false
+    end
+end)
+
+-- RUN LOOP
+RunService.Heartbeat:Connect(function(dt)
+    local char = lp.Character
+    if not char then return end
+    local root = char:FindFirstChild("HumanoidRootPart")
+    local humanoid = char:FindFirstChildOfClass("Humanoid")
+    if not root or not humanoid then return end
+
+    if BhopActive and spacePressed then
+        if humanoid.Health > 0 and humanoid.FloorMaterial ~= Enum.Material.Air then
+            humanoid.Jump = true
+            humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+        end
+    end
+
+    if TASActive then
+        local moveDir = humanoid.MoveDirection
+        local is_g = chk_grnd(root)
+        if moveDir.Magnitude > 0 then
+            if not is_g then
+                was_air = true
+                cur_spd = math.min(max_air_spd, cur_spd + air_accel)
+            else
+                if was_air then
+                    cur_spd = math.max(base_spd, cur_spd - ground_friction)
+                    was_air = false
+                end
+                cur_spd = math.max(base_spd, cur_spd)
+            end
+            root.AssemblyLinearVelocity = Vector3.new(moveDir.X * cur_spd, root.AssemblyLinearVelocity.Y, moveDir.Z * cur_spd)
+        else
+            cur_spd = base_spd
+            was_air = false
+        end
+    end
+
+    if BounceActive then
+        local currentVel = root.AssemblyLinearVelocity
+        local verticalVel = currentVel.Y
+        local state = humanoid:GetState()
+        if state == Enum.HumanoidStateType.Freefall or state == Enum.HumanoidStateType.Jumping then
+            horizontalMomentum = Vector3.new(currentVel.X, 0, currentVel.Z)
+            local params = RaycastParams.new()
+            params.FilterDescendantsInstances = {char}
+            params.FilterType = Enum.RaycastFilterType.Exclude
+            local hit = workspace:Raycast(root.Position, Vector3.new(0, -5, 0), params)
+            if hit and verticalVel < -5 then
+                if hit.Normal.Y < 0.95 then
+                    local newJump = math.abs(verticalVel) * 1.05
+                    root.AssemblyLinearVelocity = horizontalMomentum + Vector3.new(0, newJump, 0)
+                    humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+                    task.spawn(function()
+                        humanoid.PlatformStand = true
+                        task.wait(0.1)
+                        humanoid.PlatformStand = false
+                    end)
+                end
+            end
+        end
+    end
+
+    if DownedActive then
+        if char:GetAttribute("State") == "Downed" then
+            local TARGET_BOOST = 1600
+            local MAX_SPEED_CAP = 4750
+            local VEL_SCALE = 90
+            local SLOPE_ACCEL_FORCE = 6875
+            local STRAFE_BOOST_MAX = 750
+            local STRAFE_SENSITIVITY = 1.0
+            local ACCEL_RATE = 450
+            local FRICTION_DECAY = 0.9975
+            local isCtrlHeld = UIS:IsKeyDown(Enum.KeyCode.LeftControl)
+            if isCtrlHeld then
+                if currentSpeed < TARGET_BOOST then
+                    currentSpeed = math.min(currentSpeed + (ACCEL_RATE * dt * 5), TARGET_BOOST)
+                end
+            end
+            local _, camYaw, _ = workspace.CurrentCamera.CFrame:ToEulerAnglesYXZ()
+            local yawDelta = math.abs(camYaw - lastCameraYaw)
+            if yawDelta > math.pi then yawDelta = math.abs(yawDelta - (math.pi * 2)) end
+            local angularVelocity = yawDelta / dt
+            local strafeBonus = math.min(angularVelocity * STRAFE_SENSITIVITY, STRAFE_BOOST_MAX)
+            lastCameraYaw = camYaw
+            local rayParams = RaycastParams.new()
+            rayParams.FilterDescendantsInstances = {char}
+            local ray = workspace:Raycast(root.Position, Vector3.new(0, -10, 0), rayParams)
+            local slopeBonus = 0
+            if ray and ray.Instance then
+                local localNormal = root.CFrame:VectorToObjectSpace(ray.Normal)
+                local rawSlope = -localNormal.Z
+                if rawSlope > 0 then slopeBonus = rawSlope * SLOPE_ACCEL_FORCE * dt end
+            end
+            if slopeBonus > 0 then
+                currentSpeed = math.min(currentSpeed + slopeBonus, MAX_SPEED_CAP)
+            elseif isCtrlHeld or (angularVelocity > 1.5 and currentSpeed > 400) then
+                currentSpeed = math.min(currentSpeed + (strafeBonus * dt), MAX_SPEED_CAP)
+                currentSpeed = currentSpeed * 0.9995
+            else
+                if currentSpeed > 5 then currentSpeed = currentSpeed * FRICTION_DECAY else currentSpeed = 0 end
+            end
+            if currentSpeed > 0 then
+                local studsPerSec = currentSpeed / VEL_SCALE
+                local camLook = workspace.CurrentCamera.CFrame.LookVector
+                local forwardDir = Vector3.new(camLook.X, 0, camLook.Z).Unit
+                local horizontalMove = forwardDir * studsPerSec * dt
+                root.CFrame = CFrame.new(root.Position.X + horizontalMove.X, root.Position.Y, root.Position.Z + horizontalMove.Z) * root.CFrame.Rotation
+                char:SetAttribute("RelativeSpeed", currentSpeed)
+            end
+        else
+            currentSpeed = 0
+        end
+    end
+end)
+
+-- FOV LOOP
+RunService.RenderStepped:Connect(function()
+    if _G.FOVEnabled then
+        pcall(function() workspace.CurrentCamera.FieldOfView = _G.CustomFOV end)
+    end
+end)
+
+-- VIEWMODEL RENDER LOOP
+local function grudarNaCamera(dt)
+    if not viewmodelActive then
+        if modeloAtual then modeloAtual:Destroy() modeloAtual = nil end
+        return
+    end
+    if not modeloAtual then return end
+    local camera = workspace.CurrentCamera
+    local camCF = camera.CFrame
+    local finalCF = camCF * CFrame.new(animacaoKarambit.lateralAtual, animacaoKarambit.alturaAtualInsp, -animacaoKarambit.distanciaAtual)
+    finalCF = finalCF * CFrame.Angles(animacaoKarambit.rotacaoX, animacaoKarambit.rotacaoY, animacaoKarambit.rotacaoZ)
+    if modeloAtual:IsA("Model") and modeloAtual.PrimaryPart then
+        modeloAtual:SetPrimaryPartCFrame(finalCF)
+    elseif modeloAtual:IsA("BasePart") then
+        modeloAtual.CFrame = finalCF
+    end
+end
+
+RunService.RenderStepped:Connect(grudarNaCamera)
+
+-- Funcoes para botoes transparentes
+local function createTransparentButton(parent, text, callback)
+    local btn = Instance.new("TextButton", parent)
+    btn.Size = UDim2.new(1, -20, 0, 35)
+    btn.Text = text
+    btn.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
+    btn.BackgroundTransparency = 0.85
+    btn.TextColor3 = Color3.new(1, 1, 1)
+    btn.TextSize = 13
+    btn.TextStrokeTransparency = 0.5
+    btn.TextStrokeColor3 = Color3.new(0, 0, 0)
+    local uic = Instance.new("UICorner", btn)
+    uic.CornerRadius = UDim.new(0, 8)
+    btn.MouseButton1Click:Connect(callback)
+    return btn
+end
+
+local function createTransparentToggle(parent, text, current, callback)
+    local frame = Instance.new("Frame", parent)
+    frame.Size = UDim2.new(1, -20, 0, 35)
+    frame.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
+    frame.BackgroundTransparency = 0.85
+    local uic = Instance.new("UICorner", frame)
+    uic.CornerRadius = UDim.new(0, 8)
+    local lbl = Instance.new("TextLabel", frame)
+    lbl.Size, lbl.Text, lbl.TextColor3 = UDim2.new(0.7, 0, 1, 0), text, Color3.new(1, 1, 1)
+    lbl.BackgroundTransparency, lbl.TextSize, lbl.TextXAlignment = 1, 13, Enum.TextXAlignment.Left
+    lbl.TextStrokeTransparency = 0.5
+    local btn = Instance.new("TextButton", frame)
+    btn.Size, btn.Position, btn.Text = UDim2.new(0, 60, 0, 25), UDim2.new(1, -70, 0, 5), current and "ON" or "OFF"
+    btn.BackgroundColor3 = current and Color3.new(0, 0.5, 0) or Color3.new(0.5, 0, 0)
+    btn.BackgroundTransparency = 0.3
+    btn.TextColor3 = Color3.new(1, 1, 1)
+    btn.TextSize = 12
+    Instance.new("UICorner", btn)
+    local state = current
+    btn.MouseButton1Click:Connect(function()
+        state = not state
+        btn.Text = state and "ON" or "OFF"
+        btn.BackgroundColor3 = state and Color3.new(0, 0.5, 0) or Color3.new(0.5, 0, 0)
+        callback(state)
+    end)
+    return frame
+end
+
+local function createTransparentInput(parent, text, placeholder, callback)
+    local frame = Instance.new("Frame", parent)
+    frame.Size = UDim2.new(1, -20, 0, 35)
+    frame.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
+    frame.BackgroundTransparency = 0.85
+    Instance.new("UICorner", frame)
+    local lbl = Instance.new("TextLabel", frame)
+    lbl.Size, lbl.Text, lbl.TextColor3 = UDim2.new(0.35, 0, 1, 0), text, Color3.new(1, 1, 1)
+    lbl.BackgroundTransparency, lbl.TextSize = 1, 12
+    local box = Instance.new("TextBox", frame)
+    box.Size, box.Position = UDim2.new(0.6, -5, 0, 25), UDim2.new(0.38, 0, 0, 5)
+    box.PlaceholderText = placeholder
+    box.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
+    box.BackgroundTransparency = 0.5
+    box.TextColor3 = Color3.new(1, 1, 1)
+    box.TextSize = 12
+    Instance.new("UICorner", box)
+    box.FocusLost:Connect(function() callback(box.Text) end)
+    return frame
+end
+
+-- INTERFACE PRINCIPAL - LARGURA HORIZONTAL
+local function createUI()
+    if p.PlayerGui:FindFirstChild("K1N_ET1C_HUB") then p.PlayerGui.K1N_ET1C_HUB:Destroy() end
+    local sg = Instance.new("ScreenGui", p.PlayerGui)
+    sg.Name, sg.ResetOnSpawn, sg.DisplayOrder = "K1N_ET1C_HUB", false, 999
+
+    local m = Instance.new("Frame", sg)
+    m.Size = _G.isMinimized and UDim2.new(0, 100, 0, 30) or UDim2.new(0, 720, 0, 720)
+    m.Position = UDim2.new(0, 210, 0, -40)
+    m.BackgroundColor3, m.BackgroundTransparency, m.BorderSizePixel = Color3.new(0,0,0), 0.5, 0
+    m.Active, m.Draggable = true, true
+    Instance.new("UICorner", m)
+
+    local bg = Instance.new("ImageLabel", m)
+    bg.Size, bg.Image, bg.ScaleType = UDim2.new(1, 0, 1, 0), BG_IMAGE_ID, Enum.ScaleType.Stretch
+    bg.BackgroundTransparency, bg.Visible = 1, not _G.isMinimized
+
+    local bar = Instance.new("Frame", m)
+    bar.Size, bar.BackgroundColor3, bar.ZIndex = UDim2.new(1, 0, 0, 30), Color3.new(0.05, 0.05, 0.05), 5
+    bar.BackgroundTransparency = 0.5
+    Instance.new("UICorner", bar)
+
+    local title = Instance.new("TextLabel", bar)
+    title.Size, title.Position, title.Text = UDim2.new(0, 150, 1, 0), UDim2.new(0, 5, 0, 0), "K1N-ET1C HUB"
+    title.TextColor3, title.BackgroundTransparency, title.TextSize = Color3.new(1, 1, 1), 1, 14
+    title.TextXAlignment = Enum.TextXAlignment.Left
+
+    local xBtn = Instance.new("TextButton", bar)
+    xBtn.Size, xBtn.Position, xBtn.Text = UDim2.new(0, 30, 0, 30), UDim2.new(1, -30, 0, 0), "X"
+    xBtn.TextColor3, xBtn.BackgroundTransparency, xBtn.ZIndex, xBtn.TextSize = Color3.new(1, 0.2, 0.2), 1, 6, 18
+    xBtn.MouseButton1Click:Connect(function() sg:Destroy() end)
+
+    local minBtn = Instance.new("TextButton", bar)
+    minBtn.Size, minBtn.Position, minBtn.Text = UDim2.new(0, 30, 0, 30), UDim2.new(1, -60, 0, 0), _G.isMinimized and "+" or "-"
+    minBtn.TextColor3, minBtn.BackgroundTransparency, minBtn.ZIndex, minBtn.TextSize = Color3.new(1, 1, 1), 1, 6, 18
+
+    local scroll = Instance.new("ScrollingFrame", m)
+    scroll.Size = UDim2.new(1, 0, 1, -30)
+    scroll.Position = UDim2.new(0, 0, 0, 30)
+    scroll.BackgroundTransparency = 1
+    scroll.ScrollBarThickness = 6
+    scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+    scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    scroll.Visible = not _G.isMinimized
+
+    local layout = Instance.new("UIListLayout", scroll)
+    layout.Padding = UDim.new(0, 8)
+    layout.SortOrder = Enum.SortOrder.LayoutOrder
+
+    local function addCategory(parent, title)
+        local cat = Instance.new("Frame", parent)
+        cat.Size = UDim2.new(1, -10, 0, 30)
+        cat.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
+        cat.BackgroundTransparency = 0.6
+        cat.BorderSizePixel = 0
+        local uic = Instance.new("UICorner", cat)
+        uic.CornerRadius = UDim.new(0, 5)
+        local lbl = Instance.new("TextLabel", cat)
+        lbl.Size, lbl.Text, lbl.TextColor3 = UDim2.new(1, 0, 1, 0), title, Color3.new(1, 1, 1)
+        lbl.BackgroundTransparency, lbl.TextSize, lbl.Font = 1, 14, Enum.Font.GothamBold
+        return cat
+    end
+
+    -- MOVEMENT SECTION (COM SUPER JUMP E SPIN BOT)
+    addCategory(scroll, "MOVEMENT")
+    createTransparentToggle(scroll, "Auto Jump (Bhop)", BhopActive, function(v) BhopActive = v end)
+    createTransparentToggle(scroll, "TAS Movement (Strafe)", TASActive, function(v) TASActive = v end)
+    createTransparentToggle(scroll, "Bounce Assist (Ramp)", BounceActive, function(v) BounceActive = v end)
+    createTransparentToggle(scroll, "DOWNED SPEED", DownedActive, function(v) DownedActive = v end)
+    createTransparentToggle(scroll, "🦘 SUPER JUMP", SuperJumpActive, function(v) SuperJumpActive = v; notify("Super Jump", v and "ATIVADO | Pressione " .. SuperJumpKey.Name .. " para pular!" or "DESATIVADO", 2) end)
+    createTransparentInput(scroll, "Super Jump Power (1-999)", tostring(SuperJumpPower), function(v) setSuperJumpPower(v) end)
+    createTransparentInput(scroll, "Super Jump Key (C / Q / E etc)", "C", function(v) setSuperJumpKey(v) end)
+    createTransparentToggle(scroll, "🔄 SPIN BOT (A+D Spam)", SpinBotActive, function(v) SpinBotActive = v; notify("Spin Bot", v and "ATIVADO | Pressione " .. SpinBotKey.Name .. " para iniciar o giro" or "DESATIVADO", 2) end)
+    createTransparentInput(scroll, "Spin Bot Key (V / B / etc)", "V", function(v) setSpinBotKey(v) end)
+    createTransparentInput(scroll, "Spin Speed (1-999°/s)", tostring(SpinBotSpeed), function(v) setSpinBotSpeed(v) end)
+    createTransparentButton(scroll, "DOWNED SLIDE", loadDownedSlide)
+    createTransparentButton(scroll, "LEGACY ANIMATION", loadLegacyAnimation)
+    createTransparentButton(scroll, "🔹 LS SCRIPT (Auto Loot)", loadLSScript)
+
+    -- MAPS SECTION
+    addCategory(scroll, "MAPAS")
+    createTransparentButton(scroll, "DUST II MAP", LoadDust2)
+    createTransparentButton(scroll, "BEE SWARM MAP", LoadBeeSwarmMap)
+    createTransparentButton(scroll, "CUSTOM MAP", loadCustomMap)
+    createTransparentButton(scroll, "CLEAN INVI WALLS", function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/E5alR9/E5s/refs/heads/main/removeinvwall"))()
+        notify("Mapas", "Remove Invisible Walls carregado!", 1)
+    end)
+
+    -- VISUALS SECTION
+    addCategory(scroll, "VISUALS")
+    createTransparentToggle(scroll, "Ativar FOV Customizado", _G.FOVEnabled, function(v) _G.FOVEnabled = v; if not v then workspace.CurrentCamera.FieldOfView = 70 end end)
+    createTransparentInput(scroll, "FOV Value (30-170)", "70", function(v)
+        local val = tonumber(v)
+        if val then _G.CustomFOV = math.clamp(val, 30, 170) end
+    end)
+    createTransparentToggle(scroll, "Fullbright", fullbrightActive, toggleFullbright)
+    createTransparentButton(scroll, "🎨 SHADERS", loadShaders)
+    createTransparentToggle(scroll, "Toxic Aura", toxicAuraActive, function(v) toxicAuraActive = v; if v then LoadToxicAura() else RemoveToxicAura() end end)
+    createTransparentToggle(scroll, "RGB Aurelius", rgbAuraActive, function(v) rgbAuraActive = v; if v then LoadRGBAura() else RemoveRGBAura() end end)
+    createTransparentToggle(scroll, "Karambit (Viewmodel)", viewmodelActive, toggleViewmodel)
+    createTransparentInput(scroll, "Custom Skybox ID", "rbxassetid://...", function(v)
+        local id = v
+        if not id:find("rbxassetid://") and tonumber(id) then id = "rbxassetid://" .. id end
+        ApplySkybox(id)
+    end)
+
+    -- UNIVERSE SECTION
+    addCategory(scroll, "UNIVERSE")
+    createTransparentButton(scroll, "Blackhole", function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/Venqy/venqy2/refs/heads/main/Blackhole-V-"))()
+        notify("Universe", "Blackhole carregado!", 1)
+    end)
+    createTransparentButton(scroll, "Super Nova", function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/Venqy/venqy2/refs/heads/main/Supernova-V-"))()
+        notify("Universe", "Super Nova carregado!", 1)
+    end)
+    createTransparentButton(scroll, "Jupiter", function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/Venqy/venqy2/refs/heads/main/Jupiter-V-"))()
+        notify("Universe", "Jupiter carregado!", 1)
+    end)
+    createTransparentButton(scroll, "SUN", function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/Venqy/venqy2/refs/heads/main/Sun-V-"))()
+        notify("Universe", "SUN carregado!", 1)
+    end)
+    createTransparentButton(scroll, "Milky Way", function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/E5alR9/E5s/refs/heads/main/MilkyWay"))()
+        notify("Universe", "Milky Way carregado!", 1)
+    end)
+    createTransparentButton(scroll, "Gray Fog", function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/E5alR9/E5s/refs/heads/main/GREYFOG"))()
+        notify("Universe", "Gray Fog carregado!", 1)
+    end)
+    createTransparentButton(scroll, "TECH HOLE", function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/Venqy/venqy2/refs/heads/main/TECH%20HOLE"))()
+        notify("Universe", "Tech Hole carregado!", 1)
+    end)
+
+    -- CHANGERS SECTION
+    addCategory(scroll, "CHANGERS")
+    createTransparentButton(scroll, "Skin Changer", function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/darkdexv2/universalavatarchanger/main/avatarchanger"))()
+        notify("Changers", "Skin Changer carregado!", 1)
+    end)
+    createTransparentButton(scroll, "Headless", function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/E5alR9/E5s/refs/heads/main/headless"))()
+        notify("Changers", "Headless aplicado!", 1)
+    end)
+    createTransparentButton(scroll, "Korblox", function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/E5alR9/E5s/refs/heads/main/bestkorblox"))()
+        notify("Changers", "Korblox aplicado!", 1)
+    end)
+    createTransparentButton(scroll, "Item Renamer", function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/K1NETCX/K1NETCX/refs/heads/main/renamer-k1"))()
+        notify("Renamer", "Item Renamer carregado!", 1)
+    end)
+    createTransparentButton(scroll, "Music Player", function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/K1NETCX/K1NETCX/refs/heads/main/music"))()
+        notify("Music ", "Music Player aplicado!", 1)
+    end)
+	    createTransparentButton(scroll, "FOV WORKING", function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/K1NETCX/K1NETCX/refs/heads/main/fov"))()
+        notify("FOV WORKING!! CTRL FOR OPEN AND CLOSE", "FOV APLICADO!", 1)
+    end)
+
+    -- TOOLS SECTION
+    addCategory(scroll, "TOOLS")
+    createTransparentButton(scroll, "TOOL (Freeze/Spin)", function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/E5alR9/E5s/refs/heads/main/TOOL"))()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/E5alR9/E5s/refs/heads/main/LS"))()
+        pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/E5alR9/E5s/refs/heads/main/spin"))() end)
+        notify("TOOL", "Freeze Window & Spin Loaded!", 2)
+    end)
+    createTransparentButton(scroll, "Time Control", function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/dudubladespot-cyber/my-maps/refs/heads/main/time%20control"))()
+        notify("Tools", "Time Control carregado!", 1)
+    end)
+    createTransparentButton(scroll, "Movement Recorder", function()
+        pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/E5alR9/E5s/refs/heads/main/recorder"))() end)
+        notify("Recorder", "Movement Recorder carregado!", 1)
+    end)
+
+    -- UTILITIES SECTION
+    addCategory(scroll, "UTILITIES")
+    createTransparentButton(scroll, "Reset Character", function()
+        pcall(function() game:GetService("ReplicatedStorage").Events.Player.ChangePlayerMode:FireServer(true) end)
+        if lp.Character then lp.Character:BreakJoints() end
+        notify("Action", "Personagem resetado!", 1)
+    end)
+    createTransparentButton(scroll, "Rejoin Game", function()
+        notify("Action", "Rejoining...", 2)
+        local ts = game:GetService("TeleportService")
+        ts:Teleport(game.PlaceId, lp)
+    end)
+
+    minBtn.MouseButton1Click:Connect(function()
+        _G.isMinimized = not _G.isMinimized
+        m.Size = _G.isMinimized and UDim2.new(0, 100, 0, 30) or UDim2.new(0, 720, 0, 720)
+        bg.Visible = not _G.isMinimized
+        scroll.Visible = not _G.isMinimized
+        minBtn.Text = _G.isMinimized and "+" or "-"
+    end)
+end
+
+-- UI INIT
+local function ensureUI()
+    if not p.PlayerGui:FindFirstChild("K1N_ET1C_HUB") then
+        createUI()
+    end
+end
+
+ensureUI()
+p.CharacterAdded:Connect(function()
+    task.wait(1)
+    ensureUI()
+end)
+
+UIS.InputBegan:Connect(function(input, gpe)
+    if not gpe and input.KeyCode == Enum.KeyCode.Insert then
+        ensureUI()
+    end
+end)
+
+-- SPIN SYSTEM (Legacy)
+RunService.Heartbeat:Connect(function()
+    if isPressing and lp.Character then
+        local hrp = lp.Character:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            local speed = tonumber(_G.spinSpeed) or 50
+            hrp.CFrame = hrp.CFrame * CFrame.Angles(0, math.rad(speed), 0)
+        end
+    end
+end)
+
+UIS.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.KeyCode == _G.toggleKey then
+        isPressing = true
+    end
+end)
+
+UIS.InputEnded:Connect(function(input)
+    if input.KeyCode == _G.toggleKey then
+        isPressing = false
+    end
+end)
+
+-- FREEZE SYSTEM
+UIS.InputBegan:Connect(function(i, processed)
+    if processed then return end
+    if i.KeyCode.Name == _G.fKN then
+        _G.freeze = true
+    end
+end)
+
+UIS.InputEnded:Connect(function(i)
+    if i.KeyCode.Name == _G.fKN then
+        _G.freeze = false
+    end
+end)
+
+RS.Heartbeat:Connect(function()
+    local c = p.Character
+    local r = c and c:FindFirstChild("HumanoidRootPart")
+    if _G.freeze and r then
+        local op = OverlapParams.new()
+        op.FilterDescendantsInstances = {c}
+        op.FilterType = Enum.RaycastFilterType.Exclude
+        if #workspace:GetPartBoundsInRadius(r.Position, 20, op) > 0 then
+            local delayTime = (tonumber(_G.freezeMS) or 300) / 1000
+            local t = os.clock()
+            while os.clock() - t < delayTime do end
+        end
+    end
+end)
+
+-- DISCORD INVITE (com opcao YES/NO)
+task.spawn(function()
+    task.wait(5)
+    local discordBind = Instance.new("BindableFunction")
+    discordBind.OnInvoke = function(answer)
+        if answer == "YES" then
+            if setclipboard then setclipboard(DC_URL) end
+            notify("Discord", "Link copiado: " .. DC_URL, 3)
+        end
+    end
+    
+    pcall(function()
+        SG:SetCore("SendNotification", {
+            Title = "K1N-ET1C HUB",
+            Text = "Join Discord? " .. DC_URL,
+            Duration = 15,
+            Button1 = "YES",
+            Button2 = "NO",
+            Callback = discordBind
+        })
+    end)
+end)
+
+notify("K1N-ET1C HUB", "Carregado com sucesso! (Insert para abrir)", 3)
+print("//////////////////////////////// K1N-ET1C HUB PREMIUM CARREGADO ////////////////////////////////")
