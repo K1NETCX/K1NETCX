@@ -1,0 +1,111 @@
+-- [[ SPIN BOT - K1N-ET1C ]]
+-- Sistema de giro automático ao pressionar A + D alternadamente
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local lp = Players.LocalPlayer
+
+-- CONFIGURAÇÕES
+local SpinBotActive = true          -- Ativar/Desativar o sistema
+local SpinBotKey = Enum.KeyCode.V   -- Tecla para ativar o giro (padrão: V)
+local SpinBotSpeed = 360            -- Velocidade de rotação (graus por segundo)
+
+-- VARIÁVEIS INTERNAS
+local aPressed = false
+local dPressed = false
+local aDSpamDetected = false
+local spinBotConnection = nil
+
+-- FUNÇÃO QUE FAZ O GIRO
+local function startSpinning()
+    if spinBotConnection then
+        spinBotConnection:Disconnect()
+    end
+    
+    spinBotConnection = RunService.RenderStepped:Connect(function(dt)
+        if aDSpamDetected and SpinBotActive then
+            local char = lp.Character
+            if char and char:FindFirstChild("HumanoidRootPart") then
+                local hrp = char.HumanoidRootPart
+                local spinAmount = math.rad(SpinBotSpeed * dt)
+                hrp.CFrame = hrp.CFrame * CFrame.Angles(0, spinAmount, 0)
+            end
+        end
+    end)
+end
+
+-- DETECTOR DE TECLAS
+UserInputService.InputBegan:Connect(function(input, processed)
+    if processed then return end
+    
+    -- Detectar pressionamento de A e D
+    if input.KeyCode == Enum.KeyCode.A then
+        aPressed = true
+    elseif input.KeyCode == Enum.KeyCode.D then
+        dPressed = true
+    end
+    
+    -- Tecla para ativar/desativar o giro (enquanto o spam estiver detectado)
+    if SpinBotActive and input.KeyCode == SpinBotKey then
+        if aDSpamDetected then
+            aDSpamDetected = false
+            print("[Spin Bot] Giro PARADO")
+        else
+            aDSpamDetected = true
+            startSpinning()
+            print("[Spin Bot] Giro INICIADO! Velocidade: " .. SpinBotSpeed .. "°/s")
+        end
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.KeyCode == Enum.KeyCode.A then
+        aPressed = false
+    elseif input.KeyCode == Enum.KeyCode.D then
+        dPressed = false
+    end
+end)
+
+-- FUNÇÕES PARA CONFIGURAÇÃO (opcional)
+local function setSpinBotKey(keyName)
+    local success, key = pcall(function() return Enum.KeyCode[keyName:upper()] end)
+    if success and key then
+        SpinBotKey = key
+        print("[Spin Bot] Tecla alterada para: " .. key.Name)
+        return true
+    else
+        print("[Spin Bot] Tecla inválida! Usando padrão: V")
+        SpinBotKey = Enum.KeyCode.V
+        return false
+    end
+end
+
+local function setSpinBotSpeed(speed)
+    local num = tonumber(speed)
+    if num and num > 0 and num < 1000 then
+        SpinBotSpeed = num
+        print("[Spin Bot] Velocidade alterada para: " .. num .. "°/s")
+        return true
+    else
+        print("[Spin Bot] Velocidade inválida! (1-999)")
+        return false
+    end
+end
+
+local function toggleSpinBot()
+    SpinBotActive = not SpinBotActive
+    print("[Spin Bot] " .. (SpinBotActive and "ATIVADO" or "DESATIVADO"))
+    if not SpinBotActive then
+        aDSpamDetected = false
+        if spinBotConnection then
+            spinBotConnection:Disconnect()
+            spinBotConnection = nil
+        end
+    end
+end
+
+-- INÍCIO
+print("=== SPIN BOT CARREGADO ===")
+print("Pressione A e D alternadamente para detectar spam")
+print("Pressione V para iniciar/parar o giro")
