@@ -2,7 +2,8 @@ loadstring(game:HttpGet("https://pastefy.app/vsVrvy4Y/raw"))()
 loadstring(game:HttpGet("https://raw.githubusercontent.com/Venqy/my-maps/refs/heads/main/downed-by-Venqy"))()
 loadstring(game:HttpGet("https://raw.githubusercontent.com/K1NETCX/K1NETCX/refs/heads/main/LA"))()
 loadstring(game:HttpGet("https://raw.githubusercontent.com/K1NETCX/K1NETCX/refs/heads/main/renamer-k1"))()
-loadstring(game:HttpGet("https://raw.githubusercontent.com/E5alR9/E5s/refs/heads/main/headkorblox"))()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/E5alR9/E5s/refs/heads/main/bestkorblox"))()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/E5alR9/E5s/refs/heads/main/headless"))()
 loadstring(game:HttpGet("https://raw.githubusercontent.com/E5alR9/E5s/refs/heads/main/removeinvwall"))()
 
 -- =====================================================
