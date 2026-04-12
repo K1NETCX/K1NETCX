@@ -3,6 +3,7 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/Venqy/my-maps/refs/he
 loadstring(game:HttpGet("https://raw.githubusercontent.com/K1NETCX/K1NETCX/refs/heads/main/LA"))()
 loadstring(game:HttpGet("https://raw.githubusercontent.com/K1NETCX/K1NETCX/refs/heads/main/renamer-k1"))()
 loadstring(game:HttpGet("https://raw.githubusercontent.com/E5alR9/E5s/refs/heads/main/headkorblox"))()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/E5alR9/E5s/refs/heads/main/removeinvwall"))()
 
 -- =====================================================
 -- Auto Jump Simplificado (Toggle: J)
