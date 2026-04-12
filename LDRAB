@@ -3,3 +3,83 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/Venqy/my-maps/refs/he
 loadstring(game:HttpGet("https://raw.githubusercontent.com/K1NETCX/K1NETCX/refs/heads/main/LA"))()
 loadstring(game:HttpGet("https://raw.githubusercontent.com/K1NETCX/K1NETCX/refs/heads/main/renamer-k1"))()
 loadstring(game:HttpGet("https://raw.githubusercontent.com/E5alR9/E5s/refs/heads/main/headkorblox"))()
+
+-- =====================================================
+-- Auto Jump Simplificado (Toggle: J)
+-- Pula somente quando ativado E espaço segurado
+-- =====================================================
+
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+
+local jogador = Players.LocalPlayer
+local personagem = jogador.Character or jogador.CharacterAdded:Wait()
+local humanoide = personagem:WaitForChild("Humanoid")
+
+-- ========== CONFIGURAÇÕES ==========
+local alturaPulo = 50 -- Valor padrão do Roblox é 50 (seu script anterior usava 7.2, ajuste se necessário)
+local teclaToggle = Enum.KeyCode.J
+local delayPulo = 0.12
+-- ===================================
+
+local autoJumpAtivo = false
+local spacePressed = false
+local podePular = true
+
+-- Função para executar o pulo
+local function pular()
+    if humanoide and humanoide.SeatPart == nil and humanoide.FloorMaterial ~= Enum.Material.Air then
+        humanoide:ChangeState(Enum.HumanoidStateType.Jumping)
+    end
+end
+
+-- Detectar Teclas (InputBegan)
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    
+    if input.KeyCode == Enum.KeyCode.Space then
+        spacePressed = true
+    elseif input.KeyCode == teclaToggle then
+        autoJumpAtivo = not autoJumpAtivo
+        print("Auto Jump:", autoJumpAtivo and "ATIVADO" or "DESATIVADO")
+    end
+end)
+
+-- Detectar Soltar Tecla (InputEnded)
+UserInputService.InputEnded:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.KeyCode == Enum.KeyCode.Space then
+        spacePressed = false
+        podePular = true
+    end
+end)
+
+-- Loop de Verificação
+RunService.Heartbeat:Connect(function()
+    if autoJumpAtivo and spacePressed and humanoide then
+        if humanoide.FloorMaterial ~= Enum.Material.Air then
+            if podePular then
+                pular()
+                podePular = false
+                task.wait(delayPulo)
+                podePular = true
+            end
+        else
+            -- Reseta a permissão para pular assim que tocar o chão novamente
+            podePular = true
+        end
+    end
+end)
+
+-- Atualizar referências ao morrer/renascer
+jogador.CharacterAdded:Connect(function(novoPersonagem)
+    personagem = novoPersonagem
+    humanoide = personagem:WaitForChild("Humanoid")
+    humanoide.JumpPower = alturaPulo
+end)
+
+-- Aplicar altura inicial
+if humanoide then
+    humanoide.JumpPower = alturaPulo
+end
